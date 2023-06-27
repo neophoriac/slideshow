@@ -253,6 +253,8 @@
                 if (e.key === "m" || e.key === "Tab") {
                     e.preventDefault();
 
+                    if (this.fullscreenElement() === this.slideshow) {return}
+
                     if (!this.maxScreen) {
                         this.maxMode();
                         this.maxScreen = true;
@@ -566,7 +568,7 @@
                     removeEventListener("mousemove", move);
                     removeEventListener("contextmenu", stopDrag);
                     removeEventListener("mouseup", zoom);
-                    rectangle.style.cssText = "left: 0px; top: 0px; height: 0px; width: 0px; display: none";
+                    //rectangle.style.cssText = "left: 0px; top: 0px; height: 0px; width: 0px; display: none";
                 }
 
                 function zoom(e) {
@@ -575,7 +577,6 @@
                     test(rect);
                     stopDrag()
                 }
-
 
             }
 
@@ -593,7 +594,7 @@
                 }
 
                 //this.scale = maxRatio;
-                this.scale = maxRatio * this.fitScale;
+                this.scale = maxRatio;
 
                 this.image.style.transform = this.assembleTransform();
 
@@ -616,12 +617,12 @@
                 let ratioX = (x / this.containerRect.width) * 2 -1;
                 let ratioY = (y / this.containerRect.height) * 2 -1;
 
-                let scaleRatio = rect.width / befWidth;
+                let scaleRatio = this.prevRect.width / befWidth;
+                console.log(x,y)
 
-                console.log(rect.width, rect.height)
-                //console.log(x,y)
-                console.log(ratioX, ratioY)
-                console.log('scaleRatio', scaleRatio)
+                const rectangle = document.getElementById("slideshow-rectangle");
+
+                rectangle.style.cssText += `height: ${rect.height*this.scale}px; width: ${rect.width*this.scale}px; left: ${x*this.scale}px; top: ${y*this.scale}px`
 
                 this.image.style.left = this.prevRect.width < this.containerRect.width ? scaleOffsetX + centerX + "px" : scaleOffsetX + "px";
                 this.image.style.top = this.prevRect.height < this.containerRect.height ? scaleOffsetY + centerY + "px" : scaleOffsetY + "px";
