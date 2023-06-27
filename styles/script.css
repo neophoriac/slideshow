@@ -1,0 +1,390 @@
+#counter {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 900;
+    font-size: 13px;
+    width: max-content;
+    font-family: "Source Sans Pro";
+    height: 2.5em;
+    border-radius: 5px;
+    user-select: none;
+    padding-left: 4px;
+}
+.counter-button {
+    height: 2em;
+    display: flex;
+    align-items: center;
+    padding: 0px;
+    font-size: inherit;
+    line-height: inherit;
+    position: relative;
+    font-weight: 900;
+    cursor: pointer;
+    border-radius: 5px;
+}
+.counter-button:hover {
+    background-color: rgba(0,0,0,.10);
+    outline: 1px solid rgba(0,0,0,.20);
+}
+#reviewed_ids {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    position: fixed;
+    height: fit-content;
+    width: 90%;
+    min-width: min-content;
+    max-width: 100%;
+    height: fit-content;
+    min-height: fit-content;
+    max-height: 100%;
+    padding: 10px;
+    background-color: #f4f6f9;
+    border: 1px solid #efefef;
+    border-radius: 10px;
+    box-shadow: #76767670 5px 5px 15px -2px;
+    color: #212529;
+    overflow: auto;
+    resize: auto;
+    z-index: 999999999;
+}
+#reviewed_header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+}
+#reviewed_links {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    overflow: overlay;
+    padding: 10px;
+    background-color: white;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+}
+#reviewed_title {
+    color: #6c757d;
+    height: 100%;
+    width: 100%;
+    cursor: move;
+}
+#reviewed_close {
+    font-size: 10px;
+    cursor: pointer;
+}
+.open-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: initial;
+    margin: 0px 5px;
+    width: fit-content;
+}
+.svg-container {
+    height: 2em;
+    display: flex;
+    align-items: center;
+    width: 2em;
+    justify-content: center;
+}
+.tooltip {
+    font-family: "Open Sans", sans-serif;
+    z-index: 99999999;
+}
+.tooltip.tip-top {
+    border-top: 2px solid #000000ba;
+}
+.tooltip.tip-bottom {
+    border-bottom: 2px solid #000000ba;
+}
+.tooltip .arrow-up {
+    background-color: #000000ba;
+}
+.tooltip .arrow-down {
+    background-color: #000000ba;
+}
+#reviewed_links_header {
+    display: flex;
+    gap: 10px;
+    font-weight: 700;
+}
+#reviewed_links_body {
+    overflow: overlay;
+}
+.links-row {
+    display: flex;
+    gap: 10px;
+}
+.links-row:nth-child(odd) {
+    background-color: rgba(0, 0, 0, .05);
+}
+.links-cell {
+    flex: 1;
+    line-height: 1.5;
+    width: max-content;
+}
+#slideshow-background-surface {
+    top: 0;
+    left: 0;
+    margin: auto;
+    height: 100%;
+    width: 100%;
+    z-index: 9999998;
+    position: fixed;
+    display: none;
+}
+#slideshow_photos {
+    position: fixed;
+    display: flex;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    margin: auto;
+    height: 90%;
+    width: 95%;
+    flex-direction: row;
+    backdrop-filter: blur(20px);
+    z-index: 9999999;
+    justify-content: center;
+    align-items: center;
+    border-radius: 5px;
+    border: 1px solid #ced4da;
+    overflow: hidden;
+    font-family: "Open Sans", sans-serif;
+}
+.slideshow-image-container {
+    flex: 4;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: auto;
+    border-radius: 5px;
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
+    user-select: none;
+    cursor: crosshair;
+}
+.slideshow-image {
+   position: absolute;
+    pointer-events: none;
+    backface-visibility: hidden;
+    user-select: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+}
+.slideshow-info {
+    height: 100%;
+    padding: 5px;
+    box-sizing: border-box;
+    flex: 1;
+    flex-direction: column;
+    background-color: white;
+    border-left: 10px solid hwb(202 7% 43%);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    overflow: hidden;
+    position: relative;
+    background: #3c8dbc;
+}
+.slideshow-info-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    border: 1px solid #ced4da;
+    padding: 10px;
+    box-shadow: 2px 1px 3px 0px rgb(0 0 0 / 37%);
+    background: white;
+}
+.slideshow-caption {
+    color: white;
+    text-shadow: 2px 2px 0px #00000057;
+}
+.slideshow-info-header {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+.slideshow-close {
+    background: transparent;
+    border: none;
+    margin: 0;
+    padding: 0;
+    color: #ffffffba;
+    width: 1.5em;
+    height: 1.5em;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.slideshow-info-footer{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.slideshow-arrows {
+    bottom: 15px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 0px 15px;
+    color: white;
+    user-select: none;
+    font-size: 20px;
+}
+.slideshow-arrows > span {
+    width: 2em;
+    height: 2em;
+    line-height: 2em;
+    cursor: pointer;
+    text-align: center;
+    text-shadow: 2px 2px 0px #00000057;
+    transition: transform ease-out 0.2s;
+}
+.slideshow-arrows > .slideshow-count {
+    width: fit-content;
+}
+.slideshow-arrows > .slideshow-previous:hover {
+    transform: translateX(-5px);
+}
+.slideshow-arrows > .slideshow-next:hover {
+    transform: translateX(5px);
+}
+@keyframes rotate {
+    from{
+        transform: rotate(0deg);
+    }
+    to{
+        transform: rotate(360deg);
+    }
+}
+.load-icon{
+    animation: 1s infinite linear rotate;
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    margin: auto;
+    height: 24px;
+    width: 24px;
+}
+.info-icon{
+    height: 1.3em;
+    width: 1.3em;
+    padding: 3px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    top: 1px;
+}
+.info-icon >svg {
+    fill: #000000ba;
+}
+.tool-icon {
+    height: 1.5em;
+    width: 1.5em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 7px;
+    border: none;
+    background-color: #0000001a;
+    padding: 3px;
+    cursor: pointer;
+    transition: box-shaodw 300ms;
+    box-shadow: 3px 3px 5px 1px rgb(51 51 51 / 29%), -2px -1px 6px 1px #ffffff21;
+}
+.tool-icon > svg {
+    height: 1.5em;
+    width: 1.5em;
+}
+.tool-icon:active {
+    box-shadow: inset 3px 3px 5px 1px rgb(51 51 51 / 29%), inset -2px -1px 6px 1px #ffffff21;
+}
+#exitFull.tool-icon {
+    display: none;
+}
+#window.tool-icon{
+    display: none;
+}
+#fitToScreen.tool-icon {
+    display: none;
+}
+
+.tooltip-slideshow-info {
+    padding: 20px 0px;
+    margin: 0;
+}
+.tooltip-slideshow-info > li{
+    display: flex;
+    justify-content: space-between;
+    gap: 5px;
+    line-height: 2.5;
+}
+.tooltip-slideshow-info > li:nth-child(even){
+    background: rgba(0,0,0,.05)
+}
+.tooltip-slideshow-info > li span {
+    display: flex;
+    align-items: center;
+}
+.tooltip-slideshow-info > li > span:first-child{
+    font-weight: 500;
+}
+.tooltip-slideshow-info > li > span:last-child{
+    font-weight: 700;
+    display: flex;
+    gap: 5px;
+}
+.tooltip-slideshow-info svg{
+    display: inline;
+}
+#slideshow-toolbar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2.5em;
+    z-index: 9999999;
+    font-weight: 600;
+    font-size: 0.90em;
+    font-family: "Open Sans", sans-serif;
+    background: #ffffff63;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 9px;
+    padding: 5px 10px 5px 20px;
+    border-top-right-radius: 5px;
+    line-height: 1;
+    backdrop-filter: blur(2px);
+    overflow: hidden;
+    user-select: none;
+}
+.zoom-tooltip {
+    width: 3.7em;
+    text-align: center;
+    padding: 3px;
+    color: black;
+    position: relative;
+    top: 1px;
+}
+
+#slideshow-rectangle {
+    background-color: rgba(0, 0, 0, 0.3);
+    outline: 1px solid #ffff00;
+    display: none;
+    position: absolute;
+    box-sizing: border-box;
+}
