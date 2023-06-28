@@ -164,7 +164,8 @@
 
             this.imageContainer.addEventListener('wheel', e => { this.zoom(e) }, { passive: true })
             this.imageContainer.addEventListener('mousedown', e => {
-                if (this.scale > this.fitScale) {
+                const isCtrlPressed = e.getModifierState('Control')
+                if (this.scale > this.fitScale && !isCtrlPressed) {
                     this.drag(e, this.imageContainer)
                 } else {
                     this.zoomToSelection(e, this.test);
@@ -253,7 +254,7 @@
                 if (e.key === "m" || e.key === "Tab") {
                     e.preventDefault();
 
-                    if (this.fullscreenElement() === this.slideshow) {return}
+                    if (this.fullscreenElement() === this.slideshow) { return }
 
                     if (!this.maxScreen) {
                         this.maxMode();
@@ -408,7 +409,7 @@
 
                 this.prevRect = this.image.getBoundingClientRect();
                 this.containerRect = this.imageContainer.getBoundingClientRect();
-                
+
                 this.resetTransform();
 
                 let maxRatio = 1;
@@ -539,8 +540,8 @@
                 addEventListener("mouseup", zoom);
                 addEventListener("contextmenu", stopDrag);
 
-                rectangle.style.left = `${e.offsetX}px`;
-                rectangle.style.top = `${e.offsetY}px`;
+                rectangle.style.left = `${e.offsetX + rectangle.parentNode.scrollLeft}px`;
+                rectangle.style.top = `${e.offsetY + rectangle.parentNode.scrollTop}px`;
 
                 let posX = 0, posY = 0
 
@@ -552,14 +553,14 @@
                         rectangle.style.width = `${posX}px`;
                     } else {
                         rectangle.style.width = `${-posX}px`;
-                        rectangle.style.left = `${posX + e.offsetX}px`;
+                        rectangle.style.left = `${posX + e.offsetX + rectangle.parentNode.scrollLeft}px`;
                     }
 
                     if (posY >= 0) {
                         rectangle.style.height = `${posY}px`;
                     } else {
                         rectangle.style.height = `${-posY}px`;
-                        rectangle.style.top = `${posY + e.offsetY}px`;
+                        rectangle.style.top = `${posY + e.offsetY + rectangle.parentNode.scrollTop}px`;
                     }
                 }
 
@@ -568,7 +569,7 @@
                     removeEventListener("mousemove", move);
                     removeEventListener("contextmenu", stopDrag);
                     removeEventListener("mouseup", zoom);
-                    //rectangle.style.cssText = "left: 0px; top: 0px; height: 0px; width: 0px; display: none";
+                    rectangle.style.cssText = "left: 0px; top: 0px; height: 0px; width: 0px; display: none";
                 }
 
                 function zoom(e) {
@@ -580,58 +581,69 @@
 
             }
 
-            this.test = (rect) => {
-                this.resetTransform();
-                let maxRatio = 1;
-                let maxWidthRatio = this.containerRect.width / rect.width;
-                let maxHeightRatio = this.containerRect.height / rect.height;
+            this.test = (selectionRect) => {
 
-                if (rect.height * maxWidthRatio >= this.containerRect.height) {
-                    maxRatio = maxHeightRatio;
-                }
-                else if (rect.width * maxHeightRatio > this.containerRect.width) {
-                    maxRatio = maxWidthRatio;
-                }
+                if (selectionRect.width <= 3 && selectionRect.height <= 3) { return }
+                //persisting issues:
+                // selection out of image
 
-                //this.scale = maxRatio;
-                this.scale = maxRatio * this.fitScale;
-
-                this.image.style.transform = this.assembleTransform();
-
+                // width/height of our image before being scaled
                 let befWidth = this.prevRect.width
                 let befHeight = this.prevRect.height
 
+                // get the current scale of the image before resetting & updating
+                let initialScale = this.scale;
+
+                // reset our slideshow
+                this.resetTransform();
+
+                let maxRatio = 1;
+                let maxWidthRatio = this.containerRect.width / selectionRect.width;
+                let maxHeightRatio = this.containerRect.height / selectionRect.height;
+
+                if (selectionRect.height * maxWidthRatio >= this.containerRect.height) {
+                    maxRatio = maxHeightRatio;
+                }
+                else if (selectionRect.width * maxHeightRatio > this.containerRect.width) {
+                    maxRatio = maxWidthRatio;
+                }
+
+                // have to take in acccount the current scale of our image
+                this.scale = maxRatio * initialScale;
+                this.image.style.transform = this.assembleTransform();
+
+                // our new image height and width
                 this.prevRect.height = this.prevRect.height * this.scale;
                 this.prevRect.width = this.prevRect.width * this.scale;
 
-                // prevent image from not being wholly scrollable
+                // prevent the left and top of the image from going beyond the container boundaries since that area won't be scrollable
                 let scaleOffsetX = (this.prevRect.width - this.prevRect.width / this.scale) / 2;
                 let scaleOffsetY = (this.prevRect.height - this.prevRect.height / this.scale) / 2;
 
-                let centerX = (this.containerRect.width - this.prevRect.width)/2;
-                let centerY = (this.containerRect.height - this.prevRect.height)/2;
+                // the height and width difference of our image before being scaled and the container
+                let imageSizeDiffX = (this.containerRect.width - befWidth) / 2
+                let imageSizeDiffY = (this.containerRect.height - befHeight) / 2
 
-                let x = rect.left - this.containerRect.left; 
-                let y = rect.top - this.containerRect.top;
+                // the height and width difference of our image after being scaled and the container 
+                let centerX = (this.containerRect.width - this.prevRect.width) / 2;
+                let centerY = (this.containerRect.height - this.prevRect.height) / 2;
 
-                let ratioX = (x / this.containerRect.width) * 2 -1;
-                let ratioY = (y / this.containerRect.height) * 2 -1;
+                // the left and top values of our selection within the container
+                let x = selectionRect.left - this.containerRect.left;
+                let y = selectionRect.top - this.containerRect.top;
 
-                let scaleRatio = this.prevRect.width / befWidth;
-                console.log(x,y)
+                // the height and width difference of our scaled selection and the container
+                let selectionSizeDiffX = (this.containerRect.width - selectionRect.width * (this.scale / initialScale)) / 2
+                let selectionSizeDiffY = (this.containerRect.height - selectionRect.height * (this.scale / initialScale)) / 2
 
-                const rectangle = document.getElementById("slideshow-rectangle");
+                // const rectangle = document.getElementById("slideshow-rectangle");
+                // rectangle.style.cssText += `height: ${selectionRect.height * (this.scale / initialScale)}px; width: ${selectionRect.width * (this.scale / initialScale)}px; left: ${(x - imageSizeDiffX) * (this.scale / initialScale)}px; top: ${(y - imageSizeDiffY) * (this.scale / initialScale)}px`
 
-                rectangle.style.cssText += `height: ${rect.height*this.scale}px; width: ${rect.width*this.scale}px; left: ${x*this.scale}px; top: ${y*this.scale}px`
-
+                // if the image is larger than it's container move it back into the container
                 this.image.style.left = this.prevRect.width < this.containerRect.width ? scaleOffsetX + centerX + "px" : scaleOffsetX + "px";
                 this.image.style.top = this.prevRect.height < this.containerRect.height ? scaleOffsetY + centerY + "px" : scaleOffsetY + "px";
 
-                //rect.width*this.scale
-                this.imageContainer.scroll(x*this.scale, y*this.scale);
-
-               // this.imageContainer.scroll((-centerX) + (-centerX)*ratioX , (-centerY) + (-centerY)*ratioY);
-                //this.imageContainer.scroll((-centerX) + (-centerX)*ratioX + (rect.width/2)*this.scale, (-centerY) + (-centerY)*ratioY + (rect.height/2)*this.scale);
+                this.imageContainer.scroll((x - imageSizeDiffX) * (this.scale / initialScale) - selectionSizeDiffX, (y - imageSizeDiffY) * (this.scale / initialScale) - selectionSizeDiffY);
 
                 this.zoomLevel.innerText = Math.round(100 * this.scale) + "%"; // indicate percentage zoomed
 
