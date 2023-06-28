@@ -389,11 +389,11 @@
 
                 if (this.image.complete) {
                     //  showImage method will be triggered since initiallizing the observe will call the observer
-                    resizeObserver.observe(this.slideshow, { test: 'sfs' });
+                    resizeObserver.observe(this.slideshow);
                 } else {
                     this.image.addEventListener('load', e => {
                         //  showImage method will be triggered since initiallizing the observe will call the observer
-                        resizeObserver.observe(this.slideshow, { test: 'sfs' });
+                        resizeObserver.observe(this.slideshow);
                     }, { once: true })
                 }
                 this.count.innerText = `${this.currentIndex + 1}/${this.slides.length}`;
@@ -438,12 +438,12 @@
                 let centerX = (this.containerRect.width - this.prevRect.width) / 2;
                 let centerY = (this.containerRect.height - this.prevRect.height) / 2;
 
-                this.image.style.left = this.prevRect.width < this.containerRect.width ? scaleOffsetX + centerX + "px" : scaleOffsetX + "px";
-                this.image.style.top = this.prevRect.height < this.containerRect.height ? scaleOffsetY + centerY + "px" : scaleOffsetY + "px";
+                this.image.style.left = this.prevRect.width < this.containerRect.width ? `${scaleOffsetX + centerX}px` : `${scaleOffsetX}px`;
+                this.image.style.top = this.prevRect.height < this.containerRect.height ? `${scaleOffsetY + centerY}px` : `${scaleOffsetY}px`;
 
                 this.imageContainer.scroll(-centerX, -centerY);
 
-                this.zoomLevel.innerText = Math.round(100 * this.scale) + "%"; // indicate percentage zoomed
+                this.zoomLevel.innerText = `${Math.round(100 * this.scale)}%`; // indicate percentage zoomed
 
                 this.displayAppropriateIcon();
 
@@ -468,7 +468,7 @@
 
                 this.scaleControl(prevScale);
 
-                this.zoomLevel.innerText = Math.round(100 * this.scale) + "%"; // indicate percentage zoomed
+                this.zoomLevel.innerText = `${Math.round(100 * this.scale)}%`; // indicate percentage zoomed
 
                 this.image.style.transform = this.assembleTransform();
 
@@ -490,11 +490,11 @@
                 if (this.rotate / 90 % 2 === 0) { // not rotated or image is reflected
                     // See scaleOffset and center explanations above.
                     // if image width/height is bigger than the container's then stop centering since we need our scroll action to do it's thing (zoom where the pointer is).
-                    this.image.style.left = rect.width < this.containerRect.width ? scaleOffsetX + centerX + "px" : scaleOffsetX + "px";
-                    this.image.style.top = rect.height < this.containerRect.height ? scaleOffsetY + centerY + "px" : scaleOffsetY + "px";
+                    this.image.style.left = rect.width < this.containerRect.width ? `${scaleOffsetX + centerX}px` : `${scaleOffsetX}px`;
+                    this.image.style.top = rect.height < this.containerRect.height ? `${scaleOffsetY + centerY}px` : `${scaleOffsetY}px`;
                 } else { // if rotated 90 or 270 deg
-                    this.image.style.left = rect.width < this.containerRect.width ? scaleOffsetY + centerX + "px" : scaleOffsetY + (rect.width - rect.height) / 2 + "px";
-                    this.image.style.top = rect.height < this.containerRect.height ? scaleOffsetX + centerY + "px" : scaleOffsetX + (rect.height - rect.width) / 2 + "px";
+                    this.image.style.left = rect.width < this.containerRect.width ? `${scaleOffsetY + centerX}px` : `${scaleOffsetY + (rect.width - rect.height) / 2}px`;
+                    this.image.style.top = rect.height < this.containerRect.height ? `${scaleOffsetX + centerY}px` : `${scaleOffsetX + (rect.height - rect.width) / 2}px`;
                 }
 
                 let ratioX = !btnZoom ? (e?.offsetX / this.containerRect.width) * 2 - 1 : 0;
@@ -594,7 +594,7 @@
                 }
 
                 //this.scale = maxRatio;
-                this.scale = maxRatio;
+                this.scale = maxRatio * this.fitScale;
 
                 this.image.style.transform = this.assembleTransform();
 
