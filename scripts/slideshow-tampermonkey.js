@@ -15,6 +15,8 @@
         return div;
     }
 
+    // `hello ${ ( function (){return "world"}() ) }`
+
     class Slideshow {
         constructor(id, slides) {
 
@@ -78,7 +80,7 @@
 
             document.body.insertAdjacentHTML('beforeend', this.slideShowHTML);
             this.background = document.getElementById('slideshow-background-surface');
-            this.slideshow = document.getElementById('slideshow_photos');
+            this.slideshow = document.getElementById(this.id);
             this.infoBox = this.slideshow.querySelector('.slideshow-info');
             this.info = this.slideshow.querySelector('.slideshow-info-container');
             this.imageContainer = this.slideshow.querySelector('.slideshow-image-container');
@@ -569,27 +571,29 @@
                     removeEventListener("mousemove", move);
                     removeEventListener("contextmenu", stopDrag);
                     removeEventListener("mouseup", zoom);
-                    rectangle.style.cssText = "left: 0px; top: 0px; height: 0px; width: 0px; display: none";
+                    // rectangle.style.cssText = "left: 0px; top: 0px; height: 0px; width: 0px; display: none";
                 }
 
                 function zoom(e) {
                     e.preventDefault()
                     let rect = rectangle.getBoundingClientRect()
                     test(rect);
-                    stopDrag()
+                    stopDrag();
                 }
 
             }
 
             this.test = (selectionRect) => {
 
-                if (selectionRect.width <= 3 && selectionRect.height <= 3) { return }
+                if (selectionRect.width <= 3 && selectionRect.height <= 3) { return };
                 //persisting issues:
                 // selection out of image
+                // rotate
+                // select and change slide
 
                 // width/height of our image before being scaled
-                let befWidth = this.prevRect.width
-                let befHeight = this.prevRect.height
+                let befWidth = this.prevRect.width;
+                let befHeight = this.prevRect.height;
 
                 // get the current scale of the image before resetting & updating
                 let initialScale = this.scale;
@@ -608,7 +612,7 @@
                     maxRatio = maxWidthRatio;
                 }
 
-                // have to take in acccount the current scale of our image
+                // have to take into acccount the current scale of our image
                 this.scale = maxRatio * initialScale;
                 this.image.style.transform = this.assembleTransform();
 
@@ -632,12 +636,12 @@
                 let x = selectionRect.left - this.containerRect.left;
                 let y = selectionRect.top - this.containerRect.top;
 
-                // the height and width difference of our scaled selection and the container
-                let selectionSizeDiffX = (this.containerRect.width - selectionRect.width * (this.scale / initialScale)) / 2
-                let selectionSizeDiffY = (this.containerRect.height - selectionRect.height * (this.scale / initialScale)) / 2
+                // the height and width difference of our scaled selection and the container. used for centering
+                let selectionSizeDiffX = (this.containerRect.width - selectionRect.width * (this.scale / initialScale)) / 2;
+                let selectionSizeDiffY = (this.containerRect.height - selectionRect.height * (this.scale / initialScale)) / 2;
 
-                // const rectangle = document.getElementById("slideshow-rectangle");
-                // rectangle.style.cssText += `height: ${selectionRect.height * (this.scale / initialScale)}px; width: ${selectionRect.width * (this.scale / initialScale)}px; left: ${(x - imageSizeDiffX) * (this.scale / initialScale)}px; top: ${(y - imageSizeDiffY) * (this.scale / initialScale)}px`
+                const rectangle = document.getElementById("slideshow-rectangle");
+                rectangle.style.cssText += `height: ${selectionRect.height * (this.scale / initialScale)}px; width: ${selectionRect.width * (this.scale / initialScale)}px; left: ${(x - imageSizeDiffX) * (this.scale / initialScale)}px; top: ${(y - imageSizeDiffY) * (this.scale / initialScale)}px`;
 
                 // if the image is larger than it's container move it back into the container
                 this.image.style.left = this.prevRect.width < this.containerRect.width ? scaleOffsetX + centerX + "px" : scaleOffsetX + "px";
@@ -652,6 +656,9 @@
 
 
             this.resetTransform = () => {
+                const rectangle = document.getElementById("slideshow-rectangle");
+                rectangle.style.cssText += "left: 0px; top: 0px; height: 0px; width: 0px;";
+
                 this.scale = 1;
                 this.rotate = 0;
                 this.flipX = 1;
