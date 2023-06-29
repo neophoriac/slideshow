@@ -459,6 +459,7 @@
                 let scrollLeft = this.imageContainer.scrollLeft;
                 let scrollTop = this.imageContainer.scrollTop;
 
+                // to be used to find scale ratio after each zoom level
                 let prevScale = this.scale;
 
                 if (e?.wheelDelta > 0 || btnZoom == 1) {// scroll up
@@ -469,6 +470,7 @@
                     this.scale = this.scale / 1.1;
                 }
 
+                // moderate the scale level as to snap to 100% of the image and to fit to screen scale value.
                 this.scaleControl(prevScale);
 
                 this.zoomLevel.innerText = `${Math.round(100 * this.scale)}%`; // indicate percentage zoomed
@@ -477,9 +479,12 @@
 
                 let rect = this.image.getBoundingClientRect();
 
-                // transform-origin is set to default (center) so when scaling we have to make sure the image's top and left position don't become negative.
-                // Get current width/height and remove that from the initial width/height resulting in the amount of px the image has scaled,
-                // then push the image back into the container by adding half of the result to the left/top since the image is scaled equally in all directions
+                // transform-origin is set to default (center)
+                // so when scaling we have to make sure the image's top and left position don't become negative when scale is over 1,
+                // and the image doesn't drift off to the bottom right when scaled down. Essentially this works the same as transform-origin 0 0 but
+                // with the benefit of the focus being to the top-left even after the image is rotated.
+                // formula is: get current width/height and remove that from the initial width/height resulting in the amount of px the image has scaled.
+                // devide by two since the image is scaled equally in all directions
                 let scaleOffsetX = (rect.width - rect.width / this.scale) / 2;
                 let scaleOffsetY = (rect.height - rect.height / this.scale) / 2;
 
@@ -496,10 +501,15 @@
                     this.image.style.left = rect.width < this.containerRect.width ? `${scaleOffsetX + centerX}px` : `${scaleOffsetX}px`;
                     this.image.style.top = rect.height < this.containerRect.height ? `${scaleOffsetY + centerY}px` : `${scaleOffsetY}px`;
                 } else { // if rotated 90 or 270 deg
+                    // when our image is rotated so now it's height is it's width and vice versa
+                    // scaleOffset values are flipped as our dimensions have been exchanged
+                    
                     this.image.style.left = rect.width < this.containerRect.width ? `${scaleOffsetY + centerX}px` : `${scaleOffsetY + (rect.width - rect.height) / 2}px`;
                     this.image.style.top = rect.height < this.containerRect.height ? `${scaleOffsetX + centerY}px` : `${scaleOffsetX + (rect.height - rect.width) / 2}px`;
                 }
 
+                // -1 to 1 values indicating where our pointer is positioned relative to the center.
+                // center is 0 0
                 let ratioX = !btnZoom ? (e?.offsetX / this.containerRect.width) * 2 - 1 : 0;
                 let ratioY = !btnZoom ? (e?.offsetY / this.containerRect.height) * 2 - 1 : 0;
 
@@ -546,19 +556,25 @@
                 rectangle.style.top = `${e.offsetY + rectangle.parentNode.scrollTop}px`;
 
                 let posX = 0, posY = 0
+                let width, height
 
                 function move(eMove) {
+                    console.log(eMove.movementX, eMove.movementY)
                     posX += eMove.movementX;
                     posY += eMove.movementY;
 
-                    if (posX >= 0) {
+                    // posX += Math.max(-1, Math.min(1, eMove.movementX));
+                    // posY += Math.max(-1, Math.min(1, eMove.movementY));
+
+
+                    if (posX > 0) {
                         rectangle.style.width = `${posX}px`;
                     } else {
                         rectangle.style.width = `${-posX}px`;
                         rectangle.style.left = `${posX + e.offsetX + rectangle.parentNode.scrollLeft}px`;
                     }
 
-                    if (posY >= 0) {
+                    if (posY > 0) {
                         rectangle.style.height = `${posY}px`;
                     } else {
                         rectangle.style.height = `${-posY}px`;
