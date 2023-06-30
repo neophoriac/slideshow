@@ -167,10 +167,14 @@
             this.imageContainer.addEventListener('wheel', e => { this.zoom(e) }, { passive: true })
             this.imageContainer.addEventListener('mousedown', e => {
                 const isCtrlPressed = e.getModifierState('Control')
-                if (this.scale > this.fitScale && !isCtrlPressed) {
+
+                const imgHasBiggerWidth = this.prevRect.width > this.containerRect.width;
+                const imgHasBiggerHeight = this.prevRect.height > this.containerRect.height;
+
+                if ((imgHasBiggerHeight || imgHasBiggerWidth) && !isCtrlPressed) {
                     this.drag(e, this.imageContainer)
                 } else {
-                    this.zoomToSelection(e, this.test);
+                    this.mouseSelection(e, this.zoomToSelection);
                 }
             })
             //this.imageContainer.addEventListener('click', e=>{this.showSquareImage()})
@@ -226,14 +230,12 @@
                 }
                 if (e.key === "e") {
                     e.preventDefault();
-                    this.rotate += 90;
-                    this.image.style.transform = this.assembleTransform();
+                    this.rotateRecenter(true);
                 }
                 if (e.key === "q") {
                     e.preventDefault();
-                    this.rotate -= 90;
-                    this.image.style.transform = this.assembleTransform();
-                } e
+                    this.rotateRecenter(false);
+                }
                 if (e.key === "z") {
                     e.preventDefault();
                     this.flipX = -this.flipX;
@@ -295,16 +297,14 @@
                 this.zoom(e, 2);
             })
 
-            document.querySelector('#rotateLeft.tool-icon').addEventListener('click', e => {
-                e.preventDefault();
-                this.rotate -= 90;
-                this.image.style.transform = this.assembleTransform();
-            })
-
             document.querySelector('#rotateRight.tool-icon').addEventListener('click', e => {
                 e.preventDefault();
-                this.rotate += 90;
-                this.image.style.transform = this.assembleTransform();
+                this.rotateRecenter(true);
+            })
+
+            document.querySelector('#rotateLeft.tool-icon').addEventListener('click', e => {
+                e.preventDefault();
+                this.rotateRecenter(false);
             })
 
             document.querySelector('#flipX.tool-icon').addEventListener('click', e => {
@@ -408,11 +408,10 @@
                 this.loadIcon.style.display = "none";
                 this.image.style.display = "block";
 
-
                 this.prevRect = this.image.getBoundingClientRect();
                 this.containerRect = this.imageContainer.getBoundingClientRect();
 
-                this.resetTransform();
+                this.reset();
 
                 let maxRatio = 1;
                 let maxWidthRatio = this.containerRect.width / this.prevRect.width;
@@ -453,7 +452,7 @@
             }
 
             this.zoom = (e, btnZoom = 0) => {
-                // e?.preventDefault();
+
                 // Important to have the scrollLeft and scrollTop values before scaling DOWN since the values won't remain the same,
                 // but will become smaller when the max scroll possible lowers and your scroll position is close to the right/bottom
                 let scrollLeft = this.imageContainer.scrollLeft;
@@ -479,34 +478,7 @@
 
                 let rect = this.image.getBoundingClientRect();
 
-                // transform-origin is set to default (center)
-                // so when scaling we have to make sure the image's top and left position don't become negative when scale is over 1,
-                // and the image doesn't drift off to the bottom right when scaled down. Essentially this works the same as transform-origin 0 0 but
-                // with the benefit of the focus being to the top-left even after the image is rotated.
-                // formula is: get current width/height and remove that from the initial width/height resulting in the amount of px the image has scaled.
-                // devide by two since the image is scaled equally in all directions
-                let scaleOffsetX = (rect.width - rect.width / this.scale) / 2;
-                let scaleOffsetY = (rect.height - rect.height / this.scale) / 2;
-
-                // Get X & Y values for centering the image within the container.
-                // If the image is rotated the document won't consider this change and will act as if the image was never rotated
-                // but getBoundingClientRect will consider this change and will provide the new width/height values
-                // in this case we have to acquire the width as understood from the document - from the rect's height and vice versa for height
-                let centerX = this.rotate / 90 % 2 === 0 ? (this.containerRect.width - rect.width) / 2 : (this.containerRect.width - rect.height) / 2;
-                let centerY = this.rotate / 90 % 2 === 0 ? (this.containerRect.height - rect.height) / 2 : (this.containerRect.height - rect.width) / 2;
-
-                if (this.rotate / 90 % 2 === 0) { // not rotated or image is reflected
-                    // See scaleOffset and center explanations above.
-                    // if image width/height is bigger than the container's then stop centering since we need our scroll action to do it's thing (zoom where the pointer is).
-                    this.image.style.left = rect.width < this.containerRect.width ? `${scaleOffsetX + centerX}px` : `${scaleOffsetX}px`;
-                    this.image.style.top = rect.height < this.containerRect.height ? `${scaleOffsetY + centerY}px` : `${scaleOffsetY}px`;
-                } else { // if rotated 90 or 270 deg
-                    // when our image is rotated so now it's height is it's width and vice versa
-                    // scaleOffset values are flipped as our dimensions have been exchanged
-                    
-                    this.image.style.left = rect.width < this.containerRect.width ? `${scaleOffsetY + centerX}px` : `${scaleOffsetY + (rect.width - rect.height) / 2}px`;
-                    this.image.style.top = rect.height < this.containerRect.height ? `${scaleOffsetX + centerY}px` : `${scaleOffsetX + (rect.height - rect.width) / 2}px`;
-                }
+                this.positionImage(rect)
 
                 // -1 to 1 values indicating where our pointer is positioned relative to the center.
                 // center is 0 0
@@ -542,7 +514,7 @@
                 }
             }
 
-            this.zoomToSelection = (e, test) => {
+            this.mouseSelection = (e, zoomToSelection) => {
                 if (e.button !== 0) { return };
                 e.preventDefault();
                 const rectangle = document.getElementById("slideshow-rectangle");
@@ -559,13 +531,11 @@
                 let width, height
 
                 function move(eMove) {
-                    console.log(eMove.movementX, eMove.movementY)
                     posX += eMove.movementX;
                     posY += eMove.movementY;
 
                     // posX += Math.max(-1, Math.min(1, eMove.movementX));
                     // posY += Math.max(-1, Math.min(1, eMove.movementY));
-
 
                     if (posX > 0) {
                         rectangle.style.width = `${posX}px`;
@@ -593,20 +563,19 @@
                 function zoom(e) {
                     e.preventDefault()
                     let rect = rectangle.getBoundingClientRect()
-                    test(rect);
+                    zoomToSelection(rect);
                     stopDrag();
                 }
 
             }
 
-            this.test = (selectionRect) => {
+            this.zoomToSelection = (selectionRect) => {
 
                 if (selectionRect.width <= 3 && selectionRect.height <= 3) { return };
                 //persisting issues:
-                // selection out of image
-                // rotate
                 // select and change slide
 
+                this.prevRect = this.image.getBoundingClientRect()
                 // width/height of our image before being scaled
                 let priorWidth = this.prevRect.width;
                 let priorHeight = this.prevRect.height;
@@ -624,7 +593,7 @@
                 let priorScale = this.scale;
 
                 // reset our slideshow
-                this.resetTransform();
+                this.reset(false);
 
                 let maxRatio = 1;
                 let maxWidthRatio = this.containerRect.width / selectionRect.width;
@@ -645,17 +614,10 @@
                 this.prevRect.height = this.prevRect.height * this.scale;
                 this.prevRect.width = this.prevRect.width * this.scale;
 
-                // prevent the left and top of the image from going beyond the container boundaries since that area won't be scrollable
-                let scaleOffsetX = (this.prevRect.width - this.prevRect.width / this.scale) / 2;
-                let scaleOffsetY = (this.prevRect.height - this.prevRect.height / this.scale) / 2;
-
                 // the height and width difference of our image before being scaled and the container
                 let imageSizeDiffX = (this.containerRect.width - priorWidth) / 2
                 let imageSizeDiffY = (this.containerRect.height - priorHeight) / 2
 
-                // the height and width difference of our image after being scaled and the container 
-                let centerX = (this.containerRect.width - this.prevRect.width) / 2;
-                let centerY = (this.containerRect.height - this.prevRect.height) / 2;
 
                 // the left and top values of our selection within the container
                 let x = selectionRect.left - this.containerRect.left;
@@ -668,12 +630,10 @@
                 // const rectangle = document.getElementById("slideshow-rectangle");
                 // rectangle.style.cssText += `height: ${selectionRect.height * (this.scale / priorScale)}px; width: ${selectionRect.width * (this.scale / priorScale)}px; left: ${(x - imageSizeDiffX) * (this.scale / priorScale)+ scrollCenterOffsetX* (this.scale / priorScale)}px; top: ${(y - imageSizeDiffY) * (this.scale / priorScale)+ scrollCenterOffsetY* (this.scale / priorScale)}px`;
 
-                // if the image is larger than it's container move it back into the container
-                this.image.style.left = this.prevRect.width < this.containerRect.width ? scaleOffsetX + centerX + "px" : scaleOffsetX + "px";
-                this.image.style.top = this.prevRect.height < this.containerRect.height ? scaleOffsetY + centerY + "px" : scaleOffsetY + "px";
+                this.positionImage(this.prevRect)
 
-                const scrollX = (x - imageSizeDiffX) * (this.scale / priorScale) - selectionSizeDiffX + scrollCenterOffsetX* (this.scale / priorScale);
-                const scrollY = (y - imageSizeDiffY) * (this.scale / priorScale) - selectionSizeDiffY + scrollCenterOffsetY* (this.scale / priorScale);
+                const scrollX = (x - imageSizeDiffX) * (this.scale / priorScale) - selectionSizeDiffX + scrollCenterOffsetX * (this.scale / priorScale);
+                const scrollY = (y - imageSizeDiffY) * (this.scale / priorScale) - selectionSizeDiffY + scrollCenterOffsetY * (this.scale / priorScale);
 
                 this.imageContainer.scroll(scrollX, scrollY);
 
@@ -682,16 +642,94 @@
                 this.displayAppropriateIcon();
             }
 
+            this.positionImage = (rect = null) => {
 
-            this.resetTransform = () => {
+                if (!rect) { rect = this.image.getBoundingClientRect() };
+
+                // transform-origin is set to default (center)
+                // so when scaling we have to make sure the image's top and left position don't become negative when scale is over 1,
+                // and the image doesn't drift off to the bottom right when scaled down. Essentially this works the same as transform-origin 0 0 but
+                // with the benefit of the focus being to the top-left even after the image is rotated.
+                // formula is: get current width/height and remove that from the initial width/height resulting in the amount of px the image has scaled.
+                // devide by two since the image is scaled equally in all directions
+                let scaleOffsetX = (rect.width - rect.width / this.scale) / 2;
+                let scaleOffsetY = (rect.height - rect.height / this.scale) / 2;
+
+
+                // Get X & Y values for centering the image within the container.
+                // If the image is rotated the document won't consider this change and will act as if the image was never rotated
+                // but getBoundingClientRect will consider this change and will provide the new width/height values
+                // in this case we have to acquire the width as understood from the document - from the rect's height and vice versa for height
+                let centerX = this.rotate / 90 % 2 === 0 ? (this.containerRect.width - rect.width) / 2 : (this.containerRect.width - rect.height) / 2;
+                let centerY = this.rotate / 90 % 2 === 0 ? (this.containerRect.height - rect.height) / 2 : (this.containerRect.height - rect.width) / 2;
+
+                // if the image is larger than it's container move it back into the container
+                if (this.rotate / 90 % 2 === 0) { // not rotated or image is reflected
+                    // See scaleOffset and center explanations above.
+                    // if image width/height is bigger than the container's then stop centering since we need our scroll action to do it's thing (zoom where the pointer is).
+                    this.image.style.left = rect.width < this.containerRect.width ? `${scaleOffsetX + centerX}px` : `${scaleOffsetX}px`;
+                    this.image.style.top = rect.height < this.containerRect.height ? `${scaleOffsetY + centerY}px` : `${scaleOffsetY}px`;
+                } else { // if rotated 90 or 270 deg
+                    // when our image is rotated so now it's height is it's width and vice versa
+                    // scaleOffset values are flipped as our dimensions have been exchanged
+                    // same for our width and height so we have to account for their difference in length to make sure their centered
+                    this.image.style.left = rect.width < this.containerRect.width ? `${scaleOffsetY + centerX}px` : `${scaleOffsetY + (rect.width - rect.height) / 2}px`;
+                    this.image.style.top = rect.height < this.containerRect.height ? `${scaleOffsetX + centerY}px` : `${scaleOffsetX + (rect.height - rect.width) / 2}px`;
+                }
+                return { scaleOffsetX: scaleOffsetX, scaleOffsetY: scaleOffsetY, centerX: centerX, centerY: centerY };
+            }
+
+            this.rotateRecenter = (rotation) => {
+
+                const scrollLeft = this.imageContainer.scrollLeft;
+                const scrollTop = this.imageContainer.scrollTop;
+
+                if (rotation) {
+                    this.rotate += 90;
+                } else {
+                    this.rotate -= 90;
+                }
+
+                this.image.style.transform = this.assembleTransform();
+                this.positionImage();
+
+                const width = this.prevRect.width;
+                const height = this.prevRect.height;
+                this.prevRect.width = height;
+                this.prevRect.height = width;
+
+                const sizeDiffX = this.containerRect.height - this.containerRect.width;
+                const sizeDiffY = this.containerRect.width - this.containerRect.height;
+
+                console.table(this.containerRect)
+                console.log(sizeDiffX, sizeDiffY)
+                console.log(scrollLeft, scrollTop)
+                // 0% 0% => 100% 0% => 100% 100% => 0% 100% => 0% 0%
+
+                // if (this.rotate / 90 % 2 === 0) {
+                //     console.log(0, 180)
+                //     this.imageContainer.scrollTo(scrollTop - sizeDiffX, scrollTop - sizeDiffX)
+                // } else {
+                //     console.log(90, 270)
+                //     this.imageContainer.scrollTo(scrollLeft + sizeDiffY, scrollLeft + sizeDiffY)
+
+
+
+                // }
+            }
+
+            this.reset = (transform = true) => {
                 // const rectangle = document.getElementById("slideshow-rectangle");
                 // rectangle.style.cssText += "left: 0px; top: 0px; height: 0px; width: 0px;";
 
+                if (transform) {
+                    this.rotate = 0;
+                    this.flipX = 1;
+                    this.flipY = 1;
+                }
                 this.scale = 1;
-                this.rotate = 0;
-                this.flipX = 1;
-                this.flipY = 1;
                 this.image.style.transform = this.assembleTransform();
+
                 this.image.style.top = "0";
                 this.image.style.left = "0";
                 this.image.style.height = "initial";
