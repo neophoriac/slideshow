@@ -685,11 +685,13 @@
                 const scrollTop = this.imageContainer.scrollTop;
 
                 if (rotation) {
-                    this.rotate += 90;
+                    this.rotate = Math.max(0, Math.min(360, this.rotate + 90));
                 } else {
-                    this.rotate -= 90;
+                    this.rotate = Math.max(0, Math.min(360, this.rotate - 90));
                 }
+                if (this.rotate === 360) { this.rotate = 0 };
 
+                console.log(this.rotate)
                 this.image.style.transform = this.assembleTransform();
                 this.positionImage();
 
@@ -698,24 +700,42 @@
                 this.prevRect.width = height;
                 this.prevRect.height = width;
 
+                // 0% 0% => 100% 0% => 100% 100% => 0% 100% => 0% 0%
+                //Sohcahtoa
+                // sine cosine and tagent are ratios of sides
+
                 const sizeDiffX = this.containerRect.height - this.containerRect.width;
                 const sizeDiffY = this.containerRect.width - this.containerRect.height;
 
-                console.table(this.containerRect)
-                console.log(sizeDiffX, sizeDiffY)
-                console.log(scrollLeft, scrollTop)
-                // 0% 0% => 100% 0% => 100% 100% => 0% 100% => 0% 0%
+                const centerXRatio = (scrollLeft + this.containerRect.width / 2) / width;
+                const centerYRatio = (scrollTop + this.containerRect.height / 2) / height;
 
-                // if (this.rotate / 90 % 2 === 0) {
-                //     console.log(0, 180)
-                //     this.imageContainer.scrollTo(scrollTop - sizeDiffX, scrollTop - sizeDiffX)
-                // } else {
-                //     console.log(90, 270)
-                //     this.imageContainer.scrollTo(scrollLeft + sizeDiffY, scrollLeft + sizeDiffY)
+                let cx = width / 2
+                let cy = height / 2
 
+                let test = this.rotatedCoords(cx, cy, -width / 2, height / 2, this.rotate)
 
+                console.log(test)
 
-                // }
+                this.imageContainer.scrollTo(test.x, test.y)
+            }
+
+            this.rotatedCoords = (cx, cy, x, y, deg) => {
+
+                //https://gamedev.stackexchange.com/questions/86755/how-to-calculate-corner-positions-marks-of-a-rotated-tilted-rectangle
+                //youtube.com/watch?v=OYuoPTRVzxY
+                // counter-clockwise rotation
+
+                let X = cx + (x - cx) * Math.cos(this.toRadians(deg)) - (y - cy) * Math.sin(this.toRadians(deg));
+                let Y = cy + (x - cx) * Math.sin(this.toRadians(deg)) + (y - cy) * Math.cos(this.toRadians(deg));
+
+                return { x: X, y: Y }
+
+            }
+
+            this.toRadians = (deg) => {
+                return deg * (Math.PI / 180);
+                // https://www.mathsisfun.com/geometry/radians.html
             }
 
             this.reset = (transform = true) => {
@@ -755,10 +775,10 @@
                 else if ((prevScale > this.fitScale && this.scale < this.fitScale) || (prevScale < this.fitScale && this.scale > this.fitScale)) { //snap to fit to screen size
                     this.scale = this.fitScale;
                 }
-                else if (this.scale < 0.01) {
+                else if (this.scale < 0.01) { //lower bound
                     this.scale = 0.01;
                 }
-                else if (this.scale > 100) {
+                else if (this.scale > 100) { // upper bound
                     this.scale = 100;
                 }
             }
@@ -786,7 +806,7 @@
         let itemArray = {}
 
         const photo = photos[i]
-        let caption = "Caption"
+        let caption = photo.alt
         let info = document.createElement('div')
         info = extractIfo(info)
 
