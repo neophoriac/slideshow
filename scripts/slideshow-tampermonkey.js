@@ -96,6 +96,8 @@
             this.imageContainer.appendChild(this.loadIcon);
             this.containerRect
             this.prevRect
+            this.initialRect
+            this.scroll = { left: 0, top: 0 }
             this.isVisible = false;
             this.fitScale = 0;
             this.maxScreen = false;
@@ -172,7 +174,7 @@
                 const imgHasBiggerHeight = this.prevRect.height > this.containerRect.height;
 
                 if ((imgHasBiggerHeight || imgHasBiggerWidth) && !isCtrlPressed) {
-                    this.drag(e, this.imageContainer)
+                    this.drag(e, this.imageContainer, this.storeScroll)
                 } else {
                     this.mouseSelection(e, this.zoomToSelection);
                 }
@@ -402,7 +404,6 @@
                 this.count.innerText = `${this.currentIndex + 1}/${this.slides.length}`;
             }
 
-
             this.showImage = (customScale = null) => {
 
                 this.loadIcon.style.display = "none";
@@ -412,6 +413,8 @@
                 this.containerRect = this.imageContainer.getBoundingClientRect();
 
                 this.reset();
+
+                this.initialRect = this.image.getBoundingClientRect();
 
                 let maxRatio = 1;
                 let maxWidthRatio = this.containerRect.width / this.prevRect.width;
@@ -444,6 +447,9 @@
                 this.image.style.top = this.prevRect.height < this.containerRect.height ? `${scaleOffsetY + centerY}px` : `${scaleOffsetY}px`;
 
                 this.imageContainer.scroll(-centerX, -centerY);
+
+                // store the scroll positions in the property
+                this.storeScroll(-centerX, -centerY)
 
                 this.zoomLevel.innerText = `${Math.round(100 * this.scale)}%`; // indicate percentage zoomed
 
@@ -485,21 +491,26 @@
                 let ratioX = !btnZoom ? (e?.offsetX / this.containerRect.width) * 2 - 1 : 0;
                 let ratioY = !btnZoom ? (e?.offsetY / this.containerRect.height) * 2 - 1 : 0;
 
+                // the width ratio between the previous and the after
                 let scaleRatio = rect.width / this.prevRect.width;
 
+                // the length our center has moved away from the view
                 let centerOffsetX = (this.containerRect.width * scaleRatio - this.containerRect.width) / 2;
                 let centerOffsetY = (this.containerRect.height * scaleRatio - this.containerRect.height) / 2; e
 
+                // scroll into appropriate position
                 this.imageContainer.scroll(scrollLeft * scaleRatio + centerOffsetX + ratioX * centerOffsetX, scrollTop * scaleRatio + centerOffsetY + ratioY * centerOffsetY);
+
+                // store the scroll positions in the property.
+                this.storeScroll(this.imageContainer.scrollLeft, this.imageContainer.scrollTop)
 
                 this.prevRect = rect;
 
                 this.displayAppropriateIcon();
             }
 
-            this.drag = (e, container) => {
+            this.drag = (e, container, storeScroll) => {
                 if (e.button !== 0) { return };
-
                 e.preventDefault();
                 window.addEventListener("mousemove", move);
                 window.addEventListener("mouseup", stopDrag);
@@ -510,8 +521,14 @@
 
                 function stopDrag() {
                     window.removeEventListener("mousemove", move);
-
+                    // store the scroll positions in the property
+                    storeScroll(container.scrollLeft, container.scrollTop)
+                    console.log
                 }
+            }
+
+            this.storeScroll = (left, top) => {
+                this.scroll = { left: left, top: top }
             }
 
             this.mouseSelection = (e, zoomToSelection) => {
@@ -528,7 +545,6 @@
                 rectangle.style.top = `${e.offsetY + rectangle.parentNode.scrollTop}px`;
 
                 let posX = 0, posY = 0
-                let width, height
 
                 function move(eMove) {
                     posX += eMove.movementX;
@@ -637,6 +653,9 @@
 
                 this.imageContainer.scroll(scrollX, scrollY);
 
+                // store the scroll positions in the property
+                this.storeScroll(this.imageContainer.scrollLeft, this.imageContainer.scrollTop)
+
                 this.zoomLevel.innerText = Math.round(100 * this.scale) + "%"; // indicate percentage zoomed
 
                 this.displayAppropriateIcon();
@@ -681,61 +700,53 @@
 
             this.rotateRecenter = (rotation) => {
 
-                const scrollLeft = this.imageContainer.scrollLeft;
-                const scrollTop = this.imageContainer.scrollTop;
-
-                if (rotation) {
-                    this.rotate = Math.max(0, Math.min(360, this.rotate + 90));
-                } else {
-                    this.rotate = Math.max(0, Math.min(360, this.rotate - 90));
+                if (rotation) { // if positive rotation
+                    this.rotate = Math.min(360, this.rotate + 90);
+                } else { // if negative rotation
+                    this.rotate = Math.max(-360, this.rotate - 90);
                 }
-                if (this.rotate === 360) { this.rotate = 0 };
+                if (this.rotate === 360 || this.rotate === -360) { this.rotate = 0 }; // default the -360 and 360 to zero
 
-                console.log(this.rotate)
                 this.image.style.transform = this.assembleTransform();
                 this.positionImage();
 
+                // flip our width and height since the image is rotated
+                // potential issue here with non 90 deg interval
                 const width = this.prevRect.width;
                 const height = this.prevRect.height;
                 this.prevRect.width = height;
                 this.prevRect.height = width;
-
-                // 0% 0% => 100% 0% => 100% 100% => 0% 100% => 0% 0%
                 //Sohcahtoa
                 // sine cosine and tagent are ratios of sides
 
-                const sizeDiffX = this.containerRect.height - this.containerRect.width;
-                const sizeDiffY = this.containerRect.width - this.containerRect.height;
+                let initialWidth = this.initialRect.width * this.scale
+                let initialHeight = this.initialRect.height * this.scale
 
-                const centerXRatio = (scrollLeft + this.containerRect.width / 2) / width;
-                const centerYRatio = (scrollTop + this.containerRect.height / 2) / height;
+                const viewCenterX = this.scroll.left + this.containerRect.width / 2
+                const viewCenterY = initialHeight - this.scroll.top - this.containerRect.height / 2;
 
-                let cx = width / 2
-                let cy = height / 2
+                // rotation matrix assumes a counter-clockwise rotation, as such we have to translate our rotation to match that
+                let theta = 360 - this.rotate === 360 ? 0 : 360 - this.rotate
 
-                let test = this.rotatedCoords(cx, cy, -width / 2, height / 2, this.rotate)
+                let test = this.rotatedCoords(viewCenterX - initialWidth / 2, viewCenterY - initialHeight / 2, theta)
 
-                console.log(test)
-
-                this.imageContainer.scrollTo(test.x, test.y)
+                this.imageContainer.scrollTo((test.x + this.prevRect.width / 2) - this.containerRect.width / 2, (-test.y + this.prevRect.height / 2) - this.containerRect.height / 2)
             }
 
-            this.rotatedCoords = (cx, cy, x, y, deg) => {
+            this.rotatedCoords = (x, y, deg) => {
+                // https://www.mathsisfun.com/sine-cosine-tangent.html
+                // youtube.com/watch?v=OYuoPTRVzxY
+                // https://gamedev.stackexchange.com/questions/86755/how-to-calculate-corner-positions-marks-of-a-rotated-tilted-rectangle
 
-                //https://gamedev.stackexchange.com/questions/86755/how-to-calculate-corner-positions-marks-of-a-rotated-tilted-rectangle
-                //youtube.com/watch?v=OYuoPTRVzxY
-                // counter-clockwise rotation
-
-                let X = cx + (x - cx) * Math.cos(this.toRadians(deg)) - (y - cy) * Math.sin(this.toRadians(deg));
-                let Y = cy + (x - cx) * Math.sin(this.toRadians(deg)) + (y - cy) * Math.cos(this.toRadians(deg));
+                let X = x * Math.cos(this.toRadians(deg)) - y * Math.sin(this.toRadians(deg));
+                let Y = x * Math.sin(this.toRadians(deg)) + y * Math.cos(this.toRadians(deg));
 
                 return { x: X, y: Y }
-
             }
 
             this.toRadians = (deg) => {
-                return deg * (Math.PI / 180);
                 // https://www.mathsisfun.com/geometry/radians.html
+                return deg * (Math.PI / 180);
             }
 
             this.reset = (transform = true) => {
