@@ -478,31 +478,42 @@
                 // moderate the scale level as to snap to 100% of the image and to fit to screen scale value.
                 this.scaleControl(prevScale);
 
-                this.zoomLevel.innerText = `${Math.round(100 * this.scale)}%`; // indicate percentage zoomed
+                // indicate percentage zoomed
+                this.zoomLevel.innerText = `${Math.round(100 * this.scale)}%`;
 
+                // apply transform
                 this.image.style.transform = this.assembleTransform();
 
+                // the new rect
                 let rect = this.image.getBoundingClientRect();
 
-                this.positionImage(rect)
+                // position our image depending on the scale and rotation
+                const pos = this.positionImage(rect)
 
                 // -1 to 1 values indicating where our pointer is positioned relative to the center.
                 // center is 0 0
                 let ratioX = !btnZoom ? (e?.offsetX / this.containerRect.width) * 2 - 1 : 0;
                 let ratioY = !btnZoom ? (e?.offsetY / this.containerRect.height) * 2 - 1 : 0;
 
-                // the width ratio between the previous and the after
+                // the width ratio between the next and the previous one (not the initial one)
                 let scaleRatio = rect.width / this.prevRect.width;
 
-                // the length our center has moved away from the view
-                let centerOffsetX = (this.containerRect.width * scaleRatio - this.containerRect.width) / 2;
-                let centerOffsetY = (this.containerRect.height * scaleRatio - this.containerRect.height) / 2; e
+                // the length our center has moved away from the local view
+                // found by getting the difference of the scaled container and the unscaled.
+                // remember: the container width/height are also the width/height of the image in view.
+                // if the image in view is scaled (became longer and taller) then the center in view has moved
+                let centerOffsetX =  (this.containerRect.width * scaleRatio - this.containerRect.width) / 2;
+                let centerOffsetY = (this.containerRect.height * scaleRatio - this.containerRect.height) / 2;
 
-                // scroll into appropriate position
-                this.imageContainer.scroll(scrollLeft * scaleRatio + centerOffsetX + ratioX * centerOffsetX, scrollTop * scaleRatio + centerOffsetY + ratioY * centerOffsetY);
+                // choose between default center and offset center
+                let centerX = this.prevRect.width < this.containerRect.width ? -pos.centerX : centerOffsetX;
+                let centerY = this.prevRect.height < this.containerRect.height ? -pos.centerY : centerOffsetY;
+
+                // scroll to where the pointer is pointing
+                this.imageContainer.scrollTo(scrollLeft*scaleRatio + centerX + centerX*ratioX, scrollTop*scaleRatio + centerY + centerY*ratioY);
 
                 // store the scroll positions in the property.
-                this.storeScroll(this.imageContainer.scrollLeft, this.imageContainer.scrollTop)
+                this.storeScroll(this.imageContainer.scrollLeft, this.imageContainer.scrollTop);
 
                 this.prevRect = rect;
 
@@ -522,8 +533,7 @@
                 function stopDrag() {
                     window.removeEventListener("mousemove", move);
                     // store the scroll positions in the property
-                    storeScroll(container.scrollLeft, container.scrollTop)
-                    console.log
+                    storeScroll(container.scrollLeft, container.scrollTop);
                 }
             }
 
@@ -544,17 +554,17 @@
                 rectangle.style.left = `${e.offsetX + rectangle.parentNode.scrollLeft}px`;
                 rectangle.style.top = `${e.offsetY + rectangle.parentNode.scrollTop}px`;
 
-                let posX = 0, posY = 0
-
+                let currentX = e.clientX, currentY = e.clientY, posX = 0, posY = 0;
                 function move(eMove) {
-                    posX += eMove.movementX;
-                    posY += eMove.movementY;
 
-                    // posX += Math.max(-1, Math.min(1, eMove.movementX));
-                    // posY += Math.max(-1, Math.min(1, eMove.movementY));
+                    posX -= currentX - eMove.clientX;
+                    posY -= currentY - eMove.clientY;
+                    currentX = eMove.clientX; // replace previous X position with current
+                    currentY = eMove.clientY;// replace previous Y position with current
 
                     if (posX > 0) {
                         rectangle.style.width = `${posX}px`;
+                        rectangle.style.left = `${e.offsetX + rectangle.parentNode.scrollLeft}px`;
                     } else {
                         rectangle.style.width = `${-posX}px`;
                         rectangle.style.left = `${posX + e.offsetX + rectangle.parentNode.scrollLeft}px`;
@@ -562,6 +572,7 @@
 
                     if (posY > 0) {
                         rectangle.style.height = `${posY}px`;
+                        rectangle.style.top = `${e.offsetY + rectangle.parentNode.scrollTop}px`;
                     } else {
                         rectangle.style.height = `${-posY}px`;
                         rectangle.style.top = `${posY + e.offsetY + rectangle.parentNode.scrollTop}px`;
@@ -578,7 +589,7 @@
 
                 function zoom(e) {
                     e.preventDefault()
-                    let rect = rectangle.getBoundingClientRect()
+                    let rect = rectangle.getBoundingClientRect();
                     zoomToSelection(rect);
                     stopDrag();
                 }
@@ -674,7 +685,6 @@
                 let scaleOffsetX = (rect.width - rect.width / this.scale) / 2;
                 let scaleOffsetY = (rect.height - rect.height / this.scale) / 2;
 
-
                 // Get X & Y values for centering the image within the container.
                 // If the image is rotated the document won't consider this change and will act as if the image was never rotated
                 // but getBoundingClientRect will consider this change and will provide the new width/height values
@@ -716,8 +726,6 @@
                 const height = this.prevRect.height;
                 this.prevRect.width = height;
                 this.prevRect.height = width;
-                //Sohcahtoa
-                // sine cosine and tagent are ratios of sides
 
                 let initialWidth = this.initialRect.width * this.scale
                 let initialHeight = this.initialRect.height * this.scale
@@ -735,6 +743,8 @@
 
             this.rotatedCoords = (x, y, deg) => {
                 // https://www.mathsisfun.com/sine-cosine-tangent.html
+                // Sohcahtoa
+                // sine cosine and tagent are ratios of sides
                 // youtube.com/watch?v=OYuoPTRVzxY
                 // https://gamedev.stackexchange.com/questions/86755/how-to-calculate-corner-positions-marks-of-a-rotated-tilted-rectangle
 
