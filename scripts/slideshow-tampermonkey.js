@@ -2,6 +2,11 @@
 //https://picsum.photos/
 //https://imgur.com/gallery/0TyCqY3
 //https://photoswipe.com/
+// https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion
+// will-change
+// aria
+// https://developer.mozilla.org/en-US/docs/Web/HTML/Element/section
+
 // -------------------------- Show large image on Hover & display the whole small image-----------------------------
 (function () {
     'use strict';
@@ -192,6 +197,7 @@
                 this.background.style.display = "none";
                 this.isVisible = false;
                 resizeObserver.disconnect();
+                this.removeWillChange();
                 document.documentElement.style.overflow = "initial";
             }
 
@@ -200,6 +206,7 @@
                 this.background.style.display = "block";
                 this.setIndex(index);
                 this.isVisible = true;
+                this.addWillChange();
                 document.documentElement.style.overflow = "hidden";
             }
 
@@ -502,7 +509,7 @@
                 // found by getting the difference of the scaled container and the unscaled.
                 // remember: the container width/height are also the width/height of the image in view.
                 // if the image in view is scaled (became longer and taller) then the center in view has moved
-                let centerOffsetX =  (this.containerRect.width * scaleRatio - this.containerRect.width) / 2;
+                let centerOffsetX = (this.containerRect.width * scaleRatio - this.containerRect.width) / 2;
                 let centerOffsetY = (this.containerRect.height * scaleRatio - this.containerRect.height) / 2;
 
                 // choose between default center and offset center
@@ -510,7 +517,7 @@
                 let centerY = this.prevRect.height < this.containerRect.height ? -pos.centerY : centerOffsetY;
 
                 // scroll to where the pointer is pointing
-                this.imageContainer.scrollTo(scrollLeft*scaleRatio + centerX + centerX*ratioX, scrollTop*scaleRatio + centerY + centerY*ratioY);
+                this.imageContainer.scrollTo(scrollLeft * scaleRatio + centerX + centerX * ratioX, scrollTop * scaleRatio + centerY + centerY * ratioY);
 
                 // store the scroll positions in the property.
                 this.storeScroll(this.imageContainer.scrollLeft, this.imageContainer.scrollTop);
@@ -547,12 +554,15 @@
                 const rectangle = document.getElementById("slideshow-rectangle");
                 rectangle.style.display = "block";
 
+                const offsetX = e.offsetX
+                const offsetY = e.offsetY
+
+                rectangle.style.left = `${offsetX + rectangle.parentNode.scrollLeft}px`;
+                rectangle.style.top = `${offsetY + rectangle.parentNode.scrollTop}px`;
+
                 addEventListener("mousemove", move);
                 addEventListener("mouseup", zoom);
                 addEventListener("contextmenu", stopDrag);
-
-                rectangle.style.left = `${e.offsetX + rectangle.parentNode.scrollLeft}px`;
-                rectangle.style.top = `${e.offsetY + rectangle.parentNode.scrollTop}px`;
 
                 let currentX = e.clientX, currentY = e.clientY, posX = 0, posY = 0;
                 function move(eMove) {
@@ -563,19 +573,20 @@
                     currentY = eMove.clientY;// replace previous Y position with current
 
                     if (posX > 0) {
+
                         rectangle.style.width = `${posX}px`;
-                        rectangle.style.left = `${e.offsetX + rectangle.parentNode.scrollLeft}px`;
+                        rectangle.style.left = `${offsetX + rectangle.parentNode.scrollLeft}px`;
                     } else {
                         rectangle.style.width = `${-posX}px`;
-                        rectangle.style.left = `${posX + e.offsetX + rectangle.parentNode.scrollLeft}px`;
+                        rectangle.style.left = `${posX + offsetX + rectangle.parentNode.scrollLeft}px`;
                     }
 
                     if (posY > 0) {
                         rectangle.style.height = `${posY}px`;
-                        rectangle.style.top = `${e.offsetY + rectangle.parentNode.scrollTop}px`;
+                        rectangle.style.top = `${offsetY + rectangle.parentNode.scrollTop}px`;
                     } else {
                         rectangle.style.height = `${-posY}px`;
-                        rectangle.style.top = `${posY + e.offsetY + rectangle.parentNode.scrollTop}px`;
+                        rectangle.style.top = `${posY + offsetY + rectangle.parentNode.scrollTop}px`;
                     }
                 }
 
@@ -597,7 +608,6 @@
             }
 
             this.zoomToSelection = (selectionRect) => {
-
                 if (selectionRect.width <= 3 && selectionRect.height <= 3) { return };
                 //persisting issues:
                 // select and change slide
@@ -676,6 +686,25 @@
 
                 if (!rect) { rect = this.image.getBoundingClientRect() };
 
+                let topLeftEdge = this.rotatedCoords(0 - rect.width / 2, rect.height - rect.height / 2, this.rotate)
+                let topBottomEdge = this.rotatedCoords(0 - rect.width / 2, 0 - rect.height / 2, this.rotate)
+
+                let center = this.rotatedCoords(0, 0, this.rotate)
+
+                topLeftEdge.x += rect.width / 2;
+                topLeftEdge.y += rect.height / 2;
+                topBottomEdge.x += rect.width / 2;
+                topBottomEdge.y += rect.height / 2;
+
+                center.x += rect.width / 2;
+                center.y += rect.height / 2;
+
+              // console.table({ edge: "top-left", x: topLeftEdge.x, y: topLeftEdge.y });
+              // console.table({ edge: "bottom-left", x: topBottomEdge.x, y: topBottomEdge.y });
+
+               console.table({ edge: "center", x: center.x, y: center.y });
+
+
                 // transform-origin is set to default (center)
                 // so when scaling we have to make sure the image's top and left position don't become negative when scale is over 1,
                 // and the image doesn't drift off to the bottom right when scaled down. Essentially this works the same as transform-origin 0 0 but
@@ -689,31 +718,31 @@
                 // If the image is rotated the document won't consider this change and will act as if the image was never rotated
                 // but getBoundingClientRect will consider this change and will provide the new width/height values
                 // in this case we have to acquire the width as understood from the document - from the rect's height and vice versa for height
-                let centerX = this.rotate / 90 % 2 === 0 ? (this.containerRect.width - rect.width) / 2 : (this.containerRect.width - rect.height) / 2;
-                let centerY = this.rotate / 90 % 2 === 0 ? (this.containerRect.height - rect.height) / 2 : (this.containerRect.height - rect.width) / 2;
+                let centerX =  (this.containerRect.width - rect.width) / 2 ;
+                let centerY =  (this.containerRect.height - rect.height) / 2;
 
                 // if the image is larger than it's container move it back into the container
-                if (this.rotate / 90 % 2 === 0) { // not rotated or image is reflected
+                //if (this.rotate / 90 % 2 === 0) { // not rotated or image is reflected
                     // See scaleOffset and center explanations above.
                     // if image width/height is bigger than the container's then stop centering since we need our scroll action to do it's thing (zoom where the pointer is).
-                    this.image.style.left = rect.width < this.containerRect.width ? `${scaleOffsetX + centerX}px` : `${scaleOffsetX}px`;
-                    this.image.style.top = rect.height < this.containerRect.height ? `${scaleOffsetY + centerY}px` : `${scaleOffsetY}px`;
-                } else { // if rotated 90 or 270 deg
+                  //  this.image.style.left = rect.width < this.containerRect.width ? `${scaleOffsetX + centerX}px` : `${scaleOffsetX}px`;
+                  //  this.image.style.top = rect.height < this.containerRect.height ? `${scaleOffsetY + centerY}px` : `${scaleOffsetY}px`;
+             //   } else { // if rotated 90 or 270 deg
                     // when our image is rotated so now it's height is it's width and vice versa
                     // scaleOffset values are flipped as our dimensions have been exchanged
                     // same for our width and height so we have to account for their difference in length to make sure their centered
-                    this.image.style.left = rect.width < this.containerRect.width ? `${scaleOffsetY + centerX}px` : `${scaleOffsetY + (rect.width - rect.height) / 2}px`;
-                    this.image.style.top = rect.height < this.containerRect.height ? `${scaleOffsetX + centerY}px` : `${scaleOffsetX + (rect.height - rect.width) / 2}px`;
-                }
+                   // this.image.style.left = rect.width < this.containerRect.width ? `${scaleOffsetY + centerX}px` : `${scaleOffsetY + (rect.width - rect.height) / 2}px`;
+                   // this.image.style.top = rect.height < this.containerRect.height ? `${scaleOffsetX + centerY}px` : `${scaleOffsetX + (rect.height - rect.width) / 2}px`;
+              //  }
                 return { scaleOffsetX: scaleOffsetX, scaleOffsetY: scaleOffsetY, centerX: centerX, centerY: centerY };
             }
 
             this.rotateRecenter = (rotation) => {
 
                 if (rotation) { // if positive rotation
-                    this.rotate = Math.min(360, this.rotate + 90);
+                    this.rotate = Math.min(360, this.rotate + 9);
                 } else { // if negative rotation
-                    this.rotate = Math.max(-360, this.rotate - 90);
+                    this.rotate = Math.max(-360, this.rotate - 9);
                 }
                 if (this.rotate === 360 || this.rotate === -360) { this.rotate = 0 }; // default the -360 and 360 to zero
 
@@ -730,15 +759,16 @@
                 let initialWidth = this.initialRect.width * this.scale
                 let initialHeight = this.initialRect.height * this.scale
 
+                // rotation matrix assumes origin of the rectange to the bottom left
+                // so we have to translate the coordinates of our view's center with that origin in mind
                 const viewCenterX = this.scroll.left + this.containerRect.width / 2
                 const viewCenterY = initialHeight - this.scroll.top - this.containerRect.height / 2;
 
-                // rotation matrix assumes a counter-clockwise rotation, as such we have to translate our rotation to match that
-                let theta = 360 - this.rotate === 360 ? 0 : 360 - this.rotate
+                let test = this.rotatedCoords(viewCenterX - initialWidth / 2, viewCenterY - initialHeight / 2, this.rotate)
 
-                let test = this.rotatedCoords(viewCenterX - initialWidth / 2, viewCenterY - initialHeight / 2, theta)
+                this.imageContainer.scrollTo((test.x + initialWidth / 2) - this.containerRect.width / 2, (-test.y + initialHeight / 2) - this.containerRect.height / 2)
 
-                this.imageContainer.scrollTo((test.x + this.prevRect.width / 2) - this.containerRect.width / 2, (-test.y + this.prevRect.height / 2) - this.containerRect.height / 2)
+                // this.imageContainer.scrollTo((test.x + this.prevRect.width / 2) - this.containerRect.width / 2, (-test.y + this.prevRect.height / 2) - this.containerRect.height / 2)
             }
 
             this.rotatedCoords = (x, y, deg) => {
@@ -748,8 +778,11 @@
                 // youtube.com/watch?v=OYuoPTRVzxY
                 // https://gamedev.stackexchange.com/questions/86755/how-to-calculate-corner-positions-marks-of-a-rotated-tilted-rectangle
 
-                let X = x * Math.cos(this.toRadians(deg)) - y * Math.sin(this.toRadians(deg));
-                let Y = x * Math.sin(this.toRadians(deg)) + y * Math.cos(this.toRadians(deg));
+                // rotation matrix assumes a counter-clockwise rotation, as such we have to translate our rotation to match that
+                let theta = 360 - deg === 360 ? 0 : 360 - deg
+
+                let X = x * Math.cos(this.toRadians(theta)) - y * Math.sin(this.toRadians(theta));
+                let Y = x * Math.sin(this.toRadians(theta)) + y * Math.cos(this.toRadians(theta));
 
                 return { x: X, y: Y }
             }
@@ -802,6 +835,16 @@
                 else if (this.scale > 100) { // upper bound
                     this.scale = 100;
                 }
+            }
+
+            this.addWillChange = () => {
+                this.image.style.willChange = "transform";
+                this.imageContainer.style.willChange = "scroll-position";
+            }
+
+            this.removeWillChange = () => {
+                this.image.style.willChange = "auto";
+                this.imageContainer.style.willChange = "auto";
             }
         }
 
