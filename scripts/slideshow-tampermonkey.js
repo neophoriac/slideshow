@@ -684,26 +684,21 @@
 
             this.positionImage = (rect = null) => {
 
+                //top +  rotated top - initial top
+
                 if (!rect) { rect = this.image.getBoundingClientRect() };
 
-                let topLeftEdge = this.rotatedCoords(0 - rect.width / 2, rect.height - rect.height / 2, this.rotate)
-                let topBottomEdge = this.rotatedCoords(0 - rect.width / 2, 0 - rect.height / 2, this.rotate)
-
-                let center = this.rotatedCoords(0, 0, this.rotate)
-
-                topLeftEdge.x += rect.width / 2;
-                topLeftEdge.y += rect.height / 2;
-                topBottomEdge.x += rect.width / 2;
-                topBottomEdge.y += rect.height / 2;
+                let center = this.rotatedCoords(0, 0, this.rotate);
 
                 center.x += rect.width / 2;
                 center.y += rect.height / 2;
 
-              // console.table({ edge: "top-left", x: topLeftEdge.x, y: topLeftEdge.y });
-              // console.table({ edge: "bottom-left", x: topBottomEdge.x, y: topBottomEdge.y });
+                console.table({ edge: "center", x: center.x, y: center.y });
 
-               console.table({ edge: "center", x: center.x, y: center.y });
+                const rotatedDiffCx =  center.x - this.initialRect.width*this.scale/2
+                const rotatedDiffCy =  center.y - this.initialRect.height*this.scale/2
 
+                console.log(rotatedDiffCy)
 
                 // transform-origin is set to default (center)
                 // so when scaling we have to make sure the image's top and left position don't become negative when scale is over 1,
@@ -711,30 +706,33 @@
                 // with the benefit of the focus being to the top-left even after the image is rotated.
                 // formula is: get current width/height and remove that from the initial width/height resulting in the amount of px the image has scaled.
                 // devide by two since the image is scaled equally in all directions
-                let scaleOffsetX = (rect.width - rect.width / this.scale) / 2;
-                let scaleOffsetY = (rect.height - rect.height / this.scale) / 2;
+                // let scaleOffsetX = (rect.width - rect.width / this.scale) / 2;
+                // let scaleOffsetY = (rect.height - rect.height / this.scale) / 2;
+
+                let scaleOffsetX = (this.initialRect.width*this.scale - this.initialRect.width) / 2;
+                let scaleOffsetY = (this.initialRect.height*this.scale - this.initialRect.height) / 2;
 
                 // Get X & Y values for centering the image within the container.
                 // If the image is rotated the document won't consider this change and will act as if the image was never rotated
                 // but getBoundingClientRect will consider this change and will provide the new width/height values
                 // in this case we have to acquire the width as understood from the document - from the rect's height and vice versa for height
-                let centerX =  (this.containerRect.width - rect.width) / 2 ;
-                let centerY =  (this.containerRect.height - rect.height) / 2;
+                let centerX = (this.containerRect.width - rect.width) / 2;
+                let centerY = (this.containerRect.height - rect.height) / 2;
 
                 // if the image is larger than it's container move it back into the container
-                //if (this.rotate / 90 % 2 === 0) { // not rotated or image is reflected
-                    // See scaleOffset and center explanations above.
-                    // if image width/height is bigger than the container's then stop centering since we need our scroll action to do it's thing (zoom where the pointer is).
-                  //  this.image.style.left = rect.width < this.containerRect.width ? `${scaleOffsetX + centerX}px` : `${scaleOffsetX}px`;
-                  //  this.image.style.top = rect.height < this.containerRect.height ? `${scaleOffsetY + centerY}px` : `${scaleOffsetY}px`;
-             //   } else { // if rotated 90 or 270 deg
-                    // when our image is rotated so now it's height is it's width and vice versa
-                    // scaleOffset values are flipped as our dimensions have been exchanged
-                    // same for our width and height so we have to account for their difference in length to make sure their centered
-                   // this.image.style.left = rect.width < this.containerRect.width ? `${scaleOffsetY + centerX}px` : `${scaleOffsetY + (rect.width - rect.height) / 2}px`;
-                   // this.image.style.top = rect.height < this.containerRect.height ? `${scaleOffsetX + centerY}px` : `${scaleOffsetX + (rect.height - rect.width) / 2}px`;
-              //  }
-                return { scaleOffsetX: scaleOffsetX, scaleOffsetY: scaleOffsetY, centerX: centerX, centerY: centerY };
+                // if (this.rotate / 90 % 2 === 0) { // not rotated or image is reflected
+                // See scaleOffset and center explanations above.
+                // if image width/height is bigger than the container's then stop centering since we need our scroll action to do it's thing (zoom where the pointer is).
+                   this.image.style.left = rect.width < this.containerRect.width ? `${scaleOffsetX + centerX + rotatedDiffCx}px` : `${scaleOffsetX + rotatedDiffCx}px`;
+                   this.image.style.top = rect.height < this.containerRect.height ? `${scaleOffsetY + centerY + rotatedDiffCy}px` : `${scaleOffsetY + rotatedDiffCy}px`;
+                //    } else { // if rotated 90 or 270 deg
+                // when our image is rotated so now it's height is it's width and vice versa
+                // scaleOffset values are flipped as our dimensions have been exchanged
+                // same for our width and height so we have to account for their difference in length to make sure their centered
+                //    this.image.style.left = rect.width < this.containerRect.width ? `${scaleOffsetY + centerX}px` : `${scaleOffsetY + (rect.width - rect.height) / 2}px`;
+                //    this.image.style.top = rect.height < this.containerRect.height ? `${scaleOffsetX + centerY}px` : `${scaleOffsetX + (rect.height - rect.width) / 2}px`;
+                //    }
+                return { scaleOffsetX: scaleOffsetX, scaleOffsetY: scaleOffsetY, centerX: centerX, centerY: centerY, rotatedDiffCx: rotatedDiffCx, rotatedDiffCy: rotatedDiffCy };
             }
 
             this.rotateRecenter = (rotation) => {
@@ -747,7 +745,7 @@
                 if (this.rotate === 360 || this.rotate === -360) { this.rotate = 0 }; // default the -360 and 360 to zero
 
                 this.image.style.transform = this.assembleTransform();
-                this.positionImage();
+                const pos = this.positionImage();
 
                 // flip our width and height since the image is rotated
                 // potential issue here with non 90 deg interval
@@ -766,7 +764,7 @@
 
                 let test = this.rotatedCoords(viewCenterX - initialWidth / 2, viewCenterY - initialHeight / 2, this.rotate)
 
-                this.imageContainer.scrollTo((test.x + initialWidth / 2) - this.containerRect.width / 2, (-test.y + initialHeight / 2) - this.containerRect.height / 2)
+                this.imageContainer.scrollTo((test.x + initialWidth / 2) - this.containerRect.width / 2 + pos.rotatedDiffCx, (-test.y + initialHeight / 2) - this.containerRect.height / 2 + pos.rotatedDiffCy)
 
                 // this.imageContainer.scrollTo((test.x + this.prevRect.width / 2) - this.containerRect.width / 2, (-test.y + this.prevRect.height / 2) - this.containerRect.height / 2)
             }
