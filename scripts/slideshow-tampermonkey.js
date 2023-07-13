@@ -739,10 +739,7 @@
                 this.image.style.transform = this.assembleTransform();
                 const pos = this.positionImage();
 
-                // flip our width and height since the image is rotated
-                // issue: this doesn't work with non 90 deg rotation
-                const width = this.prevRect.width;
-                const height = this.prevRect.height;
+                // update our precRect with the new width/height
                 this.prevRect.width = pos.rect.width;
                 this.prevRect.height = pos.rect.height;
 
