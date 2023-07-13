@@ -743,8 +743,8 @@
                 // issue: this doesn't work with non 90 deg rotation
                 const width = this.prevRect.width;
                 const height = this.prevRect.height;
-                this.prevRect.width = height;
-                this.prevRect.height = width;
+                this.prevRect.width = pos.rect.width;
+                this.prevRect.height = pos.rect.height;
 
                 const initialWidth = this.initialRect.width * this.scale;
                 const initialHeight = this.initialRect.height * this.scale;
@@ -754,7 +754,7 @@
                 const viewY = rect.height < this.containerRect.height ? -(this.containerRect.height - rect.height) / 2 : scrollTop;
 
                 // rotation matrix assumes origin of the rectange to the bottom left
-                // so we have to translate the coordinates of our view's center with that origin in mind
+                // so we have to translate the coordinates of our view's center on the image with that origin in mind
                 const viewCenterX = viewX + this.containerRect.width / 2;
                 const viewCenterY = rect.height - viewY - this.containerRect.height / 2;
 
