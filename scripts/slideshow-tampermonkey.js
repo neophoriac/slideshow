@@ -718,15 +718,21 @@
                 this.image.style.left = rect.width < this.containerRect.width ? `${scaleOffsetX + centerX + rotatedDiffCx}px` : `${scaleOffsetX + rotatedDiffCx}px`;
                 this.image.style.top = rect.height < this.containerRect.height ? `${scaleOffsetY + centerY + rotatedDiffCy}px` : `${scaleOffsetY + rotatedDiffCy}px`;
 
-                return { scaleOffsetX: scaleOffsetX, scaleOffsetY: scaleOffsetY, centerX: centerX, centerY: centerY, rotatedDiffCx: rotatedDiffCx, rotatedDiffCy: rotatedDiffCy };
+                return { scaleOffsetX: scaleOffsetX, scaleOffsetY: scaleOffsetY, centerX: centerX, centerY: centerY, rotatedDiffCx: rotatedDiffCx, rotatedDiffCy: rotatedDiffCy, rect: rect };
             }
 
             this.rotateRecenter = (rotation) => {
+                const rect = this.image.getBoundingClientRect();
+                const scrollLeft = this.imageContainer.scrollLeft;
+                const scrollTop = this.imageContainer.scrollTop;
+                let rotateDir
 
                 if (rotation) { // if positive rotation
-                    this.rotate = Math.min(360, this.rotate + 90);
+                    this.rotate = Math.min(360, this.rotate + 9);
+                    rotateDir = 1;
                 } else { // if negative rotation
-                    this.rotate = Math.max(-360, this.rotate - 90);
+                    this.rotate = Math.max(-360, this.rotate - 9);
+                    rotateDir = -1;
                 }
                 if (this.rotate === 360 || this.rotate === -360) { this.rotate = 0 }; // default the -360 and 360 to zero
 
@@ -734,30 +740,27 @@
                 const pos = this.positionImage();
 
                 // flip our width and height since the image is rotated
-                // potential issue here with non 90 deg interval
-                // const width = this.prevRect.width;
-                // const height = this.prevRect.height;
-                // this.prevRect.width = height;
-                // this.prevRect.height = width;
+                // issue: this doesn't work with non 90 deg rotation
+                const width = this.prevRect.width;
+                const height = this.prevRect.height;
+                this.prevRect.width = height;
+                this.prevRect.height = width;
 
-                let initialWidth = this.initialRect.width * this.scale;
-                let initialHeight = this.initialRect.height * this.scale;
-
-                console.table(this.scroll)
+                const initialWidth = this.initialRect.width * this.scale;
+                const initialHeight = this.initialRect.height * this.scale;
 
                 // if scaled initial width/height is smaller than local view then get center pos else the scrolled left/top pos
-                let viewX = initialWidth < this.containerRect.width ? -(this.containerRect.width - initialWidth) / 2 : this.scroll.left;
-                let viewY = initialHeight < this.containerRect.height ? -(this.containerRect.height - initialHeight) / 2 : this.scroll.top;
+                const viewX = rect.width < this.containerRect.width ? -(this.containerRect.width - rect.width) / 2 : scrollLeft;
+                const viewY = rect.height < this.containerRect.height ? -(this.containerRect.height - rect.height) / 2 : scrollTop;
 
                 // rotation matrix assumes origin of the rectange to the bottom left
                 // so we have to translate the coordinates of our view's center with that origin in mind
                 const viewCenterX = viewX + this.containerRect.width / 2;
-                const viewCenterY = initialHeight - viewY - this.containerRect.height / 2;
+                const viewCenterY = rect.height - viewY - this.containerRect.height / 2;
 
-                let test = this.rotatedCoords(viewCenterX - initialWidth / 2, viewCenterY - initialHeight / 2, this.rotate);
+                let test = this.rotatedCoords(viewCenterX - rect.width / 2, viewCenterY - rect.height / 2, 9 * rotateDir);
 
                 this.imageContainer.scrollTo((test.x + initialWidth / 2) - this.containerRect.width / 2 + pos.rotatedDiffCx, (-test.y + initialHeight / 2) - this.containerRect.height / 2 + pos.rotatedDiffCy)
-
             }
 
             this.rotatedCoords = (x, y, deg) => {
