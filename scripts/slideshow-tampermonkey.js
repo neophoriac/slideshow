@@ -725,7 +725,7 @@
                 const rect = this.image.getBoundingClientRect();
                 const scrollLeft = this.imageContainer.scrollLeft;
                 const scrollTop = this.imageContainer.scrollTop;
-                let rotateDir
+                let rotateDir;
 
                 if (rotation) { // if positive rotation
                     this.rotate = Math.min(360, this.rotate + 9);
@@ -757,7 +757,7 @@
 
                 let test = this.rotatedCoords(viewCenterX - rect.width / 2, viewCenterY - rect.height / 2, 9 * rotateDir);
 
-                this.imageContainer.scrollTo((test.x + initialWidth / 2) - this.containerRect.width / 2 + pos.rotatedDiffCx, (-test.y + initialHeight / 2) - this.containerRect.height / 2 + pos.rotatedDiffCy)
+                this.imageContainer.scrollTo((test.x + initialWidth / 2) - this.containerRect.width / 2 + pos.rotatedDiffCx, (-test.y + initialHeight / 2) - this.containerRect.height / 2 + pos.rotatedDiffCy);
             }
 
             this.rotatedCoords = (x, y, deg) => {
