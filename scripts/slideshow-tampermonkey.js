@@ -52,7 +52,7 @@
         <button id="exitFull" class="tool-icon"><?xml version="1.0" encoding="utf-8"?><svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21.7071 3.70711L16.4142 9H20C20.5523 9 21 9.44772 21 10C21 10.5523 20.5523 11 20 11H14.0007L13.997 11C13.743 10.9992 13.4892 10.9023 13.295 10.7092L13.2908 10.705C13.196 10.6096 13.1243 10.4999 13.0759 10.3828C13.0273 10.2657 13.0004 10.1375 13 10.003L13 10V4C13 3.44772 13.4477 3 14 3C14.5523 3 15 3.44772 15 4V7.58579L20.2929 2.29289C20.6834 1.90237 21.3166 1.90237 21.7071 2.29289C22.0976 2.68342 22.0976 3.31658 21.7071 3.70711Z" fill="#000000"/><path d="M9 20C9 20.5523 9.44772 21 10 21C10.5523 21 11 20.5523 11 20V14.0007C11 13.9997 11 13.998 11 13.997C10.9992 13.7231 10.8883 13.4752 10.7092 13.295C10.7078 13.2936 10.7064 13.2922 10.705 13.2908C10.6096 13.196 10.4999 13.1243 10.3828 13.0759C10.2657 13.0273 10.1375 13.0004 10.003 13C10.002 13 10.001 13 10 13H4C3.44772 13 3 13.4477 3 14C3 14.5523 3.44772 15 4 15H7.58579L2.29289 20.2929C1.90237 20.6834 1.90237 21.3166 2.29289 21.7071C2.68342 22.0976 3.31658 22.0976 3.70711 21.7071L9 16.4142V20Z" fill="#000000"/></svg></button>
       </div>
       <div class="slideshow-image-container">
-         <img class="slideshow-image"/>
+         <img class="slideshow-image" loading="lazy"/>
          <div id="slideshow-rectangle"></div>
       </div>
       <div class="slideshow-info">
@@ -102,7 +102,6 @@
             this.containerRect
             this.prevRect
             this.initialRect
-            this.scroll = { left: 0, top: 0 }
             this.isVisible = false;
             this.fitScale = 0;
             this.maxScreen = false;
@@ -171,7 +170,14 @@
                 this.showImage();
             })
 
-            this.imageContainer.addEventListener('wheel', e => { this.zoom(e) }, { passive: true })
+            this.imageContainer.addEventListener('wheel', e => {
+                if (e.buttons === 1) {
+                    this.rotateRecenter(true)
+                } else {
+                    this.zoom(e)
+                }
+            }, { passive: true })
+
             this.imageContainer.addEventListener('mousedown', e => {
                 const isCtrlPressed = e.getModifierState('Control')
 
@@ -179,7 +185,7 @@
                 const imgHasBiggerHeight = this.prevRect.height > this.containerRect.height;
 
                 if ((imgHasBiggerHeight || imgHasBiggerWidth) && !isCtrlPressed) {
-                    this.drag(e, this.imageContainer, this.storeScroll)
+                    this.drag(e, this.imageContainer)
                 } else {
                     this.mouseSelection(e, this.zoomToSelection);
                 }
@@ -456,9 +462,6 @@
 
                 this.imageContainer.scroll(-centerX, -centerY);
 
-                // store the scroll positions in the property
-                this.storeScroll(-centerX, -centerY)
-
                 this.zoomLevel.innerText = `${Math.round(100 * this.scale)}%`; // indicate percentage zoomed
 
                 this.displayAppropriateIcon();
@@ -520,15 +523,12 @@
                 // scroll to where the pointer is pointing
                 this.imageContainer.scrollTo(scrollLeft * scaleRatio + centerX + centerX * ratioX, scrollTop * scaleRatio + centerY + centerY * ratioY);
 
-                // store the scroll positions in the property.
-                this.storeScroll(this.imageContainer.scrollLeft, this.imageContainer.scrollTop);
-
                 this.prevRect = rect;
 
                 this.displayAppropriateIcon();
             }
 
-            this.drag = (e, container, storeScroll) => {
+            this.drag = (e, container) => {
                 if (e.button !== 0) { return };
                 e.preventDefault();
                 window.addEventListener("mousemove", move);
@@ -540,13 +540,7 @@
 
                 function stopDrag() {
                     window.removeEventListener("mousemove", move);
-                    // store the scroll positions in the property
-                    storeScroll(container.scrollLeft, container.scrollTop);
                 }
-            }
-
-            this.storeScroll = (left, top) => {
-                this.scroll = { left: left, top: top }
             }
 
             this.mouseSelection = (e, zoomToSelection) => {
@@ -674,9 +668,6 @@
 
                 this.imageContainer.scroll(scrollX, scrollY);
 
-                // store the scroll positions in the property
-                this.storeScroll(this.imageContainer.scrollLeft, this.imageContainer.scrollTop)
-
                 this.zoomLevel.innerText = Math.round(100 * this.scale) + "%"; // indicate percentage zoomed
 
                 this.displayAppropriateIcon();
@@ -684,7 +675,7 @@
 
             this.positionImage = (rect = null) => {
 
-                //top +  rotated top - initial top
+                if (!this.initialRect) { return };
 
                 if (!rect) { rect = this.image.getBoundingClientRect() };
 
@@ -693,8 +684,8 @@
                 center.x += rect.width / 2;
                 center.y += rect.height / 2;
 
-                const rotatedDiffCx = center.x - this.initialRect.width * this.scale / 2
-                const rotatedDiffCy = center.y - this.initialRect.height * this.scale / 2
+                const rotatedDiffCx = center.x - (this.initialRect.width * this.scale) / 2
+                const rotatedDiffCy = center.y - (this.initialRect.height * this.scale) / 2
 
                 // transform-origin is set to default (center)
                 // so when scaling we have to make sure the image's top and left position don't become negative when scale is over 1,
@@ -757,7 +748,11 @@
 
                 let test = this.rotatedCoords(viewCenterX - rect.width / 2, viewCenterY - rect.height / 2, 9 * rotateDir);
 
-                this.imageContainer.scrollTo((test.x + initialWidth / 2) - this.containerRect.width / 2 + pos.rotatedDiffCx, (-test.y + initialHeight / 2) - this.containerRect.height / 2 + pos.rotatedDiffCy);
+                // since the image's transform-origin is the center of the original width/height we add those center values
+                // plus the difference of the original center point and the rotated center point
+                // minus our local view's half width/center to put the point in the view's center
+
+                this.imageContainer.scrollTo((test.x + initialWidth / 2 + pos.rotatedDiffCx) - this.containerRect.width / 2, (-test.y + initialHeight / 2 + pos.rotatedDiffCy) - this.containerRect.height / 2);
             }
 
             this.rotatedCoords = (x, y, deg) => {
