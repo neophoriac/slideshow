@@ -423,8 +423,8 @@
                 this.loadIcon.style.display = "none";
                 this.image.style.display = "block";
                 this.reset();
-                this.image.style.padding = "0";
-                this.padding = 1000;
+                this.padding = 0;
+                this.image.style.padding = `${this.padding}px`;
 
                 // issue: if I store prevRect to initialRect then initialRect values change seemingly by themselves?
                 // same if I declare image rect to a seperate var then asign it to the prevRect and initialRect
@@ -434,13 +434,13 @@
                 this.containerRect = this.imageContainer.getBoundingClientRect();
 
                 let maxRatio = 1;
-                let maxWidthRatio = this.containerRect.width / this.prevRect.width;
-                let maxHeightRatio = this.containerRect.height / this.prevRect.height;
+                let maxWidthRatio = this.containerRect.width / (this.prevRect.width - this.padding * 2);
+                let maxHeightRatio = this.containerRect.height / (this.prevRect.height - this.padding * 2);
 
-                if (this.prevRect.height * maxWidthRatio >= this.containerRect.height) {
+                if ((this.prevRect.height - this.padding * 2) * maxWidthRatio >= this.containerRect.height) {
                     maxRatio = maxHeightRatio;
                 }
-                else if (this.prevRect.width * maxHeightRatio > this.containerRect.width) {
+                else if ((this.prevRect.width - this.padding * 2) * maxHeightRatio > this.containerRect.width) {
                     maxRatio = maxWidthRatio;
                 }
 
@@ -460,10 +460,10 @@
                 let centerX = (this.containerRect.width - this.prevRect.width) / 2;
                 let centerY = (this.containerRect.height - this.prevRect.height) / 2;
 
-                this.image.style.padding = `${this.padding}px`;
+                let left = this.prevRect.width < this.containerRect.width ? `${scaleOffsetX + centerX}px` : `${scaleOffsetX}px`;
+                let top = this.prevRect.height < this.containerRect.height ? `${scaleOffsetY + centerY}px` : `${scaleOffsetY}px`;
 
-                this.image.style.left = this.prevRect.width < this.containerRect.width ? `${scaleOffsetX + centerX - this.padding}px` : `${scaleOffsetX - this.padding}px`;
-                this.image.style.top = this.prevRect.height < this.containerRect.height ? `${scaleOffsetY + centerY - this.padding}px` : `${scaleOffsetY - this.padding}px`;
+                this.image.style.translate = `${left} ${top}`;
 
                 this.imageContainer.scroll(-centerX, -centerY);
 
@@ -474,12 +474,10 @@
             }
 
             this.zoom = (e, btnZoom = 0) => {
-
                 // Important to have the scrollLeft and scrollTop values before scaling DOWN since the values won't remain the same,
                 // but will become smaller when the max scroll possible lowers and your scroll position is close to the right/bottom
                 let scrollLeft = this.imageContainer.scrollLeft;
                 let scrollTop = this.imageContainer.scrollTop;
-
                 // to be used to find scale ratio after each zoom level
                 let prevScale = this.scale;
 
@@ -504,7 +502,7 @@
                 let rect = this.image.getBoundingClientRect();
 
                 // position our image depending on the scale and rotation
-                const pos = this.positionImage(rect)
+                const pos = this.positionImage(rect);
 
                 // -1 to 1 values indicating where our pointer is positioned relative to the center.
                 // center is 0 0
@@ -679,7 +677,6 @@
             }
 
             this.positionImage = (rect = null) => {
-
                 if (!this.initialRect) { return };
 
                 if (!rect) { rect = this.image.getBoundingClientRect() };
@@ -711,8 +708,13 @@
 
                 // if the image is larger than it's container move it back into the container
                 // if image width/height is bigger than the container's then stop centering since we need our scroll action to do it's thing (zoom where the pointer is).
-                this.image.style.left = rect.width < this.containerRect.width ? `${scaleOffsetX + centerX + rotatedDiffCx - this.padding}px` : `${scaleOffsetX + rotatedDiffCx - this.padding}px`;
-                this.image.style.top = rect.height < this.containerRect.height ? `${scaleOffsetY + centerY + rotatedDiffCy - this.padding}px` : `${scaleOffsetY + rotatedDiffCy - this.padding}px`;
+                let left = rect.width < this.containerRect.width ? `${scaleOffsetX + centerX + rotatedDiffCx}px` : `${scaleOffsetX + rotatedDiffCx}px`;
+                let top = rect.height < this.containerRect.height ? `${scaleOffsetY + centerY + rotatedDiffCy}px` : `${scaleOffsetY + rotatedDiffCy}px`;
+
+                this.image.style.translate = `${left} ${top}`;
+                this.imageContainer.style.overflow = "auto";
+                this.imageContainer.scrollLeft;
+                this.imageContainer.style.overflow = "hidden";
 
                 return { scaleOffsetX: scaleOffsetX, scaleOffsetY: scaleOffsetY, centerX: centerX, centerY: centerY, rotatedDiffCx: rotatedDiffCx, rotatedDiffCy: rotatedDiffCy, rect: rect };
             }
@@ -793,8 +795,8 @@
                 this.scale = 1;
                 this.image.style.transform = this.assembleTransform();
 
-                this.image.style.top = "0px";
-                this.image.style.left = "0px";
+                // this.image.style.top = "0px";
+                //this.image.style.left = "0px";
                 this.imageContainer.dispatchEvent(new Event('wheel')) // scrollHeight/scrollWidth remains the same even after programmaticaly changing src on the img element, this is a hack to reset them
             }
 
