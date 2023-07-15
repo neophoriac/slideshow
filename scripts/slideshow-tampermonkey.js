@@ -537,14 +537,41 @@
                 window.addEventListener("mousemove", move);
                 window.addEventListener("mouseup", stopDrag);
 
+                let currentX = e.clientX, currentY = e.clientY, posX = 0, posY = 0;
+
                 function move(e) {
-                    container.scrollBy({ left: -e.movementX, top: -e.movementY, behavior: "instant" })
+                    posX = currentX - e.clientX;
+                    posY = currentY - e.clientY;
+                    currentX = e.clientX; // replace previous X position with current
+                    currentY = e.clientY;// replace previous Y position with current
+                    container.scrollBy({ left: posX, top: posY, behavior: "instant" })
                 }
 
                 function stopDrag() {
+                    inertia(posX, posY)
                     window.removeEventListener("mousemove", move);
+                    window.removeEventListener("mouseup", stopDrag);
+
+                }
+
+                async function inertia(x, y) {
+                    x = x * 10
+                    y = y * 10
+                    while (x > 0 || y > 0) {
+                       await setTimeout(async () => {
+                            await container.scrollBy(x, y);
+                            console.log(x, y)
+
+                        }, 300)
+
+                        x = Math.max(0, x - 1);
+                        y = Math.max(0, y - 1);
+
+                    }
+
                 }
             }
+
 
             this.mouseSelection = (e, zoomToSelection) => {
                 if (e.button !== 0) { return };
