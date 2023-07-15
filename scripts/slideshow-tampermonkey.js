@@ -105,6 +105,7 @@
             this.isVisible = false;
             this.fitScale = 0;
             this.maxScreen = false;
+            this.padding = 0;
 
             this.fullscreenElement = () => {
                 if (document.fullscreenElement) {
@@ -422,6 +423,8 @@
                 this.loadIcon.style.display = "none";
                 this.image.style.display = "block";
                 this.reset();
+                this.image.style.padding = "0";
+                this.padding = 1000;
 
                 // issue: if I store prevRect to initialRect then initialRect values change seemingly by themselves?
                 // same if I declare image rect to a seperate var then asign it to the prevRect and initialRect
@@ -457,8 +460,10 @@
                 let centerX = (this.containerRect.width - this.prevRect.width) / 2;
                 let centerY = (this.containerRect.height - this.prevRect.height) / 2;
 
-                this.image.style.left = this.prevRect.width < this.containerRect.width ? `${scaleOffsetX + centerX}px` : `${scaleOffsetX}px`;
-                this.image.style.top = this.prevRect.height < this.containerRect.height ? `${scaleOffsetY + centerY}px` : `${scaleOffsetY}px`;
+                this.image.style.padding = `${this.padding}px`;
+
+                this.image.style.left = this.prevRect.width < this.containerRect.width ? `${scaleOffsetX + centerX - this.padding}px` : `${scaleOffsetX - this.padding}px`;
+                this.image.style.top = this.prevRect.height < this.containerRect.height ? `${scaleOffsetY + centerY - this.padding}px` : `${scaleOffsetY - this.padding}px`;
 
                 this.imageContainer.scroll(-centerX, -centerY);
 
@@ -706,8 +711,8 @@
 
                 // if the image is larger than it's container move it back into the container
                 // if image width/height is bigger than the container's then stop centering since we need our scroll action to do it's thing (zoom where the pointer is).
-                this.image.style.left = rect.width < this.containerRect.width ? `${scaleOffsetX + centerX + rotatedDiffCx}px` : `${scaleOffsetX + rotatedDiffCx}px`;
-                this.image.style.top = rect.height < this.containerRect.height ? `${scaleOffsetY + centerY + rotatedDiffCy}px` : `${scaleOffsetY + rotatedDiffCy}px`;
+                this.image.style.left = rect.width < this.containerRect.width ? `${scaleOffsetX + centerX + rotatedDiffCx - this.padding}px` : `${scaleOffsetX + rotatedDiffCx - this.padding}px`;
+                this.image.style.top = rect.height < this.containerRect.height ? `${scaleOffsetY + centerY + rotatedDiffCy - this.padding}px` : `${scaleOffsetY + rotatedDiffCy - this.padding}px`;
 
                 return { scaleOffsetX: scaleOffsetX, scaleOffsetY: scaleOffsetY, centerX: centerX, centerY: centerY, rotatedDiffCx: rotatedDiffCx, rotatedDiffCy: rotatedDiffCy, rect: rect };
             }
