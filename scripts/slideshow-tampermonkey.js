@@ -20,8 +20,6 @@
         return div;
     }
 
-    // `hello ${ ( function (){return "world"}() ) }`
-
     class Slideshow {
         constructor(id, slides) {
 
@@ -537,35 +535,58 @@
                 window.addEventListener("mousemove", move);
                 window.addEventListener("mouseup", stopDrag);
 
-                let currentX = e.clientX, currentY = e.clientY, posX = 0, posY = 0;
+                let currentX = e.clientX, currentY = e.clientY, posX = 0, posY = 0, scrollLeft = this.imageContainer.scrollLeft, scrollTop = this.imageContainer.scrollTop;
 
                 function move(e) {
                     posX = currentX - e.clientX;
                     posY = currentY - e.clientY;
+
                     currentX = e.clientX; // replace previous X position with current
                     currentY = e.clientY;// replace previous Y position with current
-                    container.scrollBy({ left: posX, top: posY, behavior: "instant" })
+
+                    // using scrollTo and scrollLeft/Top instead of scrollBy since non 1 device pixel ratios produce decimal scroll values in some browsers (e.g chrome)
+                    container.scrollTo(scrollLeft + posX, scrollTop + posY)
+                    scrollLeft +=posX;
+                    scrollTop +=posY;
                 }
 
                 function stopDrag() {
-                    inertia(posX, posY)
+                   // inertia(posX, posY)
                     window.removeEventListener("mousemove", move);
                     window.removeEventListener("mouseup", stopDrag);
 
                 }
 
                 async function inertia(x, y) {
-                    x = x * 10
-                    y = y * 10
-                    while (x > 0 || y > 0) {
-                       await setTimeout(async () => {
-                            await container.scrollBy(x, y);
-                            console.log(x, y)
 
-                        }, 300)
+                    x = x == 1 || x == -1 ? 0 : x * 5;
+                    y = y == 1 || y == -1 ? 0 : y * 5;
 
-                        x = Math.max(0, x - 1);
-                        y = Math.max(0, y - 1);
+                    if (x < 0 && x > -30) { x -= 25 };
+                    if (x > 0 && x < 30) { x += 25 };
+
+                    if (y < 0 && y > -30) { y -= 25 };
+                    if (y > 0 && y < 30) { y += 25 };
+
+                    let max = Math.max(Math.abs(x), Math.abs(y));
+
+                    if (y !== 0) {
+                        y = y < 0 ? -max : max;
+                    }
+                    if (x !== 0) {
+                        x = x < 0 ? -max : max;
+                    }
+                    console.log(y, x)
+
+                    while (x !== 0 || y !== 0) {
+                        let scroll = await new Promise((resolve, reject) => {
+                            setTimeout(() => {
+                                container.scrollBy(x, y);
+                                resolve(true)
+                            }, 5)
+                        })
+                        x = x > 0 ? Math.max(0, x - 1) : Math.min(0, x + 1);
+                        y = y > 0 ? Math.max(0, y - 1) : Math.min(0, y + 1);
 
                     }
 
