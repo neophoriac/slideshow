@@ -551,7 +551,7 @@
                 }
 
                 function stopDrag() {
-                   // inertia(posX, posY)
+                    inertia(posX, posY)
                     window.removeEventListener("mousemove", move);
                     window.removeEventListener("mouseup", stopDrag);
 
