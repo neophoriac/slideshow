@@ -535,9 +535,9 @@
                 window.addEventListener("mousemove", move);
                 window.addEventListener("mouseup", stopDrag);
 
-                let currentX = e.clientX, currentY = e.clientY, posX = 0, posY = 0, scrollLeft = this.imageContainer.scrollLeft, scrollTop = this.imageContainer.scrollTop;
-
+                let currentX = e.clientX, currentY = e.clientY, posX = 0, posY = 0
                 function move(e) {
+                    //  console.time("pan")
                     posX = currentX - e.clientX;
                     posY = currentY - e.clientY;
 
@@ -545,13 +545,14 @@
                     currentY = e.clientY;// replace previous Y position with current
 
                     // using scrollTo and scrollLeft/Top instead of scrollBy since non 1 device pixel ratios produce decimal scroll values in some browsers (e.g chrome)
-                    container.scrollTo(scrollLeft + posX, scrollTop + posY)
-                    scrollLeft +=posX;
-                    scrollTop +=posY;
+                    // use Math.ceil to round up the scroll position
+                    container.scrollTo(Math.ceil(container.scrollLeft) + posX, Math.ceil(container.scrollTop) + posY)
+
+                    // console.timeEnd("pan")
                 }
 
                 function stopDrag() {
-                    inertia(posX, posY)
+                    // inertia(posX, posY)
                     window.removeEventListener("mousemove", move);
                     window.removeEventListener("mouseup", stopDrag);
 
