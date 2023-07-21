@@ -537,7 +537,6 @@
 
                 let currentX = e.clientX, currentY = e.clientY, posX = 0, posY = 0
                 function move(e) {
-                    //  console.time("pan")
                     posX = currentX - e.clientX;
                     posY = currentY - e.clientY;
 
@@ -547,18 +546,17 @@
                     // using scrollTo and scrollLeft/Top instead of scrollBy since non 1 device pixel ratios produce decimal scroll values in some browsers (e.g chrome)
                     // use Math.ceil to round up the scroll position
                     container.scrollTo(Math.ceil(container.scrollLeft) + posX, Math.ceil(container.scrollTop) + posY)
-
-                    // console.timeEnd("pan")
                 }
 
                 function stopDrag() {
-                    // inertia(posX, posY)
+                     inertia(posX, posY)
                     window.removeEventListener("mousemove", move);
                     window.removeEventListener("mouseup", stopDrag);
 
                 }
 
                 async function inertia(x, y) {
+                    console.log(y, x)
 
                     x = x == 1 || x == -1 ? 0 : x * 5;
                     y = y == 1 || y == -1 ? 0 : y * 5;
@@ -577,7 +575,6 @@
                     if (x !== 0) {
                         x = x < 0 ? -max : max;
                     }
-                    console.log(y, x)
 
                     while (x !== 0 || y !== 0) {
                         let scroll = await new Promise((resolve, reject) => {
@@ -679,6 +676,7 @@
                 // reset our slideshow
                 this.reset(false);
 
+                // find the scale for the selection so it fits the screen
                 let maxRatio = 1;
                 let maxWidthRatio = this.containerRect.width / selectionRect.width;
                 let maxHeightRatio = this.containerRect.height / selectionRect.height;
