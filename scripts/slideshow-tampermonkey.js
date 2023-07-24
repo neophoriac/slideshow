@@ -535,59 +535,94 @@
                 window.addEventListener("mousemove", move);
                 window.addEventListener("mouseup", stopDrag);
 
-                let currentX = e.clientX, currentY = e.clientY, posX = 0, posY = 0
-                function move(e) {
-                    posX = currentX - e.clientX;
-                    posY = currentY - e.clientY;
+                // will store last three pos values (difference between previous mouse position and current)
+                // this will help is form an approximation of the dragging direction just before mouseup
+                let samples = []
 
-                    currentX = e.clientX; // replace previous X position with current
-                    currentY = e.clientY;// replace previous Y position with current
+                let curMouseX = e.clientX, curMouseY = e.clientY, posX = 0, posY = 0
+                function move(e) {
+                    posX = curMouseX - e.clientX;
+                    posY = curMouseY - e.clientY;
+
+                    curMouseX = e.clientX; // replace previous X position with current
+                    curMouseY = e.clientY;// replace previous Y position with current
 
                     // using scrollTo and scrollLeft/Top instead of scrollBy since non 1 device pixel ratios produce decimal scroll values in some browsers (e.g chrome)
                     // use Math.ceil to round up the scroll position
                     container.scrollTo(Math.ceil(container.scrollLeft) + posX, Math.ceil(container.scrollTop) + posY)
+
+                    if (samples.length == 4) {
+                        samples.shift()
+                    }
+                    samples.push({ x: posX, y: posY })
                 }
 
                 function stopDrag() {
-                     inertia(posX, posY)
+                    inertia(samples)
                     window.removeEventListener("mousemove", move);
                     window.removeEventListener("mouseup", stopDrag);
 
                 }
 
-                async function inertia(x, y) {
-                    console.log(y, x)
+                let isMousedown = false;
 
-                    x = x == 1 || x == -1 ? 0 : x * 5;
-                    y = y == 1 || y == -1 ? 0 : y * 5;
 
-                    if (x < 0 && x > -30) { x -= 25 };
-                    if (x > 0 && x < 30) { x += 25 };
+                function inertia(samples) {
 
-                    if (y < 0 && y > -30) { y -= 25 };
-                    if (y > 0 && y < 30) { y += 25 };
+                    // issues:
+                    // include timeout fallback
+                    // zooming fires inertia on 4k tv?
+                    // different refresh rates
 
-                    let max = Math.max(Math.abs(x), Math.abs(y));
+                    // to do: https://www.youtube.com/watch?v=rWtfClpWSb8 deltatime to account for framerate variation
+                    // will hold approximate direction
+                    let sampleAvg = samples.reduce((acc, cur) => {
+                        return { x: acc.x + cur.x, y: acc.y + cur.y }
+                    })
 
-                    if (y !== 0) {
-                        y = y < 0 ? -max : max;
+                    sampleAvg.x = Math.ceil(sampleAvg.x / samples.length);
+                    sampleAvg.y = Math.ceil(sampleAvg.y / samples.length);
+
+                    const dirX = sampleAvg.x >= 0 ? 1 : -1
+                    const dirY = sampleAvg.y >= 0 ? 1 : -1
+
+                    // console.table(sampleAvg)
+
+                    let cycleElapsed, count = 0;
+                    let scroll = (timeStamp) => {
+                        if (cycleElapsed === undefined) {
+                            cycleElapsed = timeStamp;
+                        }
+                        cycleElapsed = timeStamp - cycleElapsed;
+                        count += cycleElapsed;
+                        cycleElapsed = timeStamp;
+
+                        //   if (count >= 1000 / 60) {
+                        //   console.log("count:", count)
+                        count = 0;
+                        cycleElapsed = timeStamp;
+
+                        // if (length <= 15) {
+                        //     sampleAvg.x = sampleAvg.x === 1 ||  sampleAvg.x === 0 ? 0 : sampleAvg.x - 2;
+                        //     sampleAvg.y = sampleAvg.y === 1 ||  sampleAvg.y === 0 ? 0 : sampleAvg.y - 2;
+                        // }
+
+                        container.scrollBy({ left: sampleAvg.x, top: sampleAvg.y, behavior: "instant" });
+                        console.table(sampleAvg)
+                        sampleAvg.x = sampleAvg.x * 0.95, sampleAvg.y = sampleAvg.y * 0.95
+                        // }
+
+                        if ((((dirX > 0 && Math.floor(sampleAvg.x) > 0) || (dirX < 0 && Math.ceil(sampleAvg.x) < 0)) ||
+                            ((dirY > 0 && Math.floor(sampleAvg.y) > 0) || (dirY < 0 && Math.ceil(sampleAvg.y) < 0)) )&&
+                            !isMousedown
+                        ) {
+                            requestAnimationFrame(scroll);
+                        }
                     }
-                    if (x !== 0) {
-                        x = x < 0 ? -max : max;
-                    }
-
-                    while (x !== 0 || y !== 0) {
-                        let scroll = await new Promise((resolve, reject) => {
-                            setTimeout(() => {
-                                container.scrollBy(x, y);
-                                resolve(true)
-                            }, 5)
-                        })
-                        x = x > 0 ? Math.max(0, x - 1) : Math.min(0, x + 1);
-                        y = y > 0 ? Math.max(0, y - 1) : Math.min(0, y + 1);
-
-                    }
-
+                    requestAnimationFrame(scroll);
+                    addEventListener("mousedown", e => {
+                        isMousedown = true
+                    }, { once: true })
                 }
             }
 
