@@ -836,58 +836,66 @@
             }
 
             this.rotateRecenter = (rotation) => {
-                const rect = this.image.getBoundingClientRect();
-                let pos = this.positionImage(rect);
+            const rect = this.image.getBoundingClientRect();
+            let pos = this.positionImage(rect);
 
-                let rotateDir,
-                    pxLeft = pos.left + this.translateX,
-                    pxTop = pos.top + this.translateY,
-                    posLeft = pos.left,
-                    posTop = pos.top;
+            let rotateDir,
+                pxLeft = pos.scaleOffsetX + this.translateX,
+                pxTop = pos.scaleOffsetY - this.translateY,
+                posLeft = pos.left,
+                posTop = pos.top;
 
-                if (rotation) { // if positive rotation
-                    this.rotate = Math.min(360, this.rotate + 9);
-                    rotateDir = 1;
-                } else { // if negative rotation
-                    this.rotate = Math.max(-360, this.rotate - 9);
-                    rotateDir = -1;
-                }
-                if (this.rotate === 360 || this.rotate === -360) { this.rotate = 0 }; // default the -360 and 360 to zero
-
-                this.image.style.transform = this.assembleTransform();
-                pos = this.positionImage();
-
-                // update our precRect with the new width/height
-                this.prevRect.width = pos.rect.width;
-                this.prevRect.height = pos.rect.height;
-
-                const unrotatedWidth = this.initialRect.width * this.scale;
-                const unrotatedHeight = this.initialRect.height * this.scale;
-
-                // if scaled initial width/height is smaller than the view then get center pos else the scrolled left/top pos
-                const viewX = rect.width < this.containerRect.width ? -(this.containerRect.width - rect.width) / 2 : pxLeft;
-                const viewY = rect.height < this.containerRect.height ? -(this.containerRect.height - rect.height) / 2 : pxTop;
-
-                // rotation matrix assumes origin of the rectange to the bottom left
-                // so we have to translate the coordinates of our view's center on the image with that origin in mind
-                const viewCenterX = viewX + this.containerRect.width / 2;
-                const viewCenterY = rect.height - viewY - this.containerRect.height / 2;
-                console.log(viewX, rect.height - viewY )
-
-                let test = this.rotatedCoords(viewCenterX - rect.width / 2, viewCenterY - rect.height / 2, 9 * rotateDir);
-
-
-                // since the image's transform-origin is the center of the original width/height we add those center values
-                // plus the difference of the original center point and the rotated center point
-                // minus our local view's half width/center to move our new point in the view's center
-
-                // this.imageContainer.scrollTo((test.x + unrotatedWidth / 2 + pos.rotatedDiffCx) - this.containerRect.width / 2, (-test.y + unrotatedHeight / 2 + pos.rotatedDiffCy) - this.containerRect.height / 2);
-
-                this.translateX = (test.x + unrotatedWidth / 2 + pos.rotatedDiffCx) - this.containerRect.width / 2 ;
-                this.translateY = (-test.y + unrotatedHeight / 2 + pos.rotatedDiffCy) - this.containerRect.height / 2;
-
-                this.image.style.translate = `${this.translateX  + pos.left }px ${this.translateY +pos.top}px`
+            if (rotation) { // if positive rotation
+                this.rotate = Math.min(360, this.rotate +90);
+                rotateDir = 1;
+            } else { // if negative rotation
+                this.rotate = Math.max(-360, this.rotate - 90);
+                rotateDir = -1;
             }
+            if (this.rotate === 360 || this.rotate === -360) { this.rotate = 0 }; // default the -360 and 360 to zero
+
+            this.image.style.transform = this.assembleTransform();
+            pos = this.positionImage();
+
+            // update our precRect with the new width/height
+            this.prevRect.width = pos.rect.width;
+            this.prevRect.height = pos.rect.height;
+
+            const unrotatedWidth = this.initialRect.width * this.scale;
+            const unrotatedHeight = this.initialRect.height * this.scale;
+
+            // if scaled initial width/height is smaller than the view then get center pos else the scrolled left/top pos
+            const viewX = rect.width < this.containerRect.width ? -(this.containerRect.width - rect.width) / 2 : Math.abs(this.translateX)
+            const viewY = rect.height < this.containerRect.height ? -(this.containerRect.height - rect.height) / 2 : Math.abs(this.translateY)
+            console.log(viewX, viewY)
+
+            // rotation matrix assumes origin of the rectange to the bottom left
+            // so we have to translate the coordinates of our view's center on the image with that origin in mind
+            const viewCenterX = viewX + this.containerRect.width / 2;
+            const viewCenterY = rect.height - viewY - this.containerRect.height / 2;
+
+
+
+            let test = this.rotatedCoords(viewCenterX - rect.width / 2, viewCenterY - rect.height / 2, 9 * rotateDir);
+
+            console.log(test)
+
+
+            // since the image's transform-origin is the center of the original width/height we add those center values
+            // plus the difference of the original center point and the rotated center point
+            // minus our local view's half width/center to move our new point in the view's center
+
+            // this.imageContainer.scrollTo((test.x + unrotatedWidth / 2 + pos.rotatedDiffCx) - this.containerRect.width / 2, (-test.y + unrotatedHeight / 2 + pos.rotatedDiffCy) - this.containerRect.height / 2);
+
+            this.translateX = (test.x + unrotatedWidth/2) + this.containerRect.width / 2
+            this.translateY = (-test.y + unrotatedHeight / 2 ) + this.containerRect.height /2
+
+            // this.translateX = test.x - this.containerRect.width / 2;
+            //  this.translateY = -test.y -  this.containerRect.height / 2
+
+            this.image.style.translate = `${pos.left + this.translateX}px ${pos.top + this.translateY}px`
+            }
+
 
             this.rotatedCoords = (x, y, deg) => {
                 // https://www.mathsisfun.com/sine-cosine-tangent.html
