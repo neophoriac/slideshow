@@ -20,7 +20,7 @@
         return div;
     }
 
- class Slideshow {
+class Slideshow {
     constructor(id, slides) {
 
         if (typeof id !== "string") {
@@ -465,8 +465,6 @@
 
             this.image.style.translate = `${left}px ${top}px`;
 
-            console.log(left, top)
-
             //   this.image.style.transform = `translate(${-centerX}, ${-centerY})`;
 
             this.zoomLevel.innerText = `${Math.round(100 * this.scale)}%`; // indicate percentage zoomed
@@ -537,11 +535,6 @@
             this.displayAppropriateIcon();
         }
 
-        this.curMouseX = 0;
-        this.curMouseY = 0;
-        this.posX = 0;
-        this.posY = 0;
-
         this.drag = (e, image) => {
             if (e.button !== 0) { return };
             e.preventDefault();
@@ -549,7 +542,7 @@
             this.raf = raf.bind(this);
             this.stopDrag = stopDrag.bind(this);
             this.inertia = inertia.bind(this);
-            let pos = this.positionImage(this.prevRect)
+            let pos = this.positionImage(this.prevRect);
             let samples = [];
 
             window.addEventListener("mousemove", this.raf);
@@ -564,7 +557,7 @@
             }
 
             let prevTime
-            this.curMouseX = e.clientX, this.curMouseY = e.clientY
+            let curMouseX = e.clientX, curMouseY = e.clientY, posX = 0, posY = 0;
 
             function move(e, timestamp) {
 
@@ -574,22 +567,23 @@
 
                 prevTime = timestamp;
 
-                this.posX = this.curMouseX - e.clientX;
-                this.posY = this.curMouseY - e.clientY;
+                posX = curMouseX - e.clientX;
+                posY = curMouseY - e.clientY;
 
-                this.curMouseX = e.clientX; // replace previous X position with current
-                this.curMouseY = e.clientY;// replace previous Y position with current
+                curMouseX = e.clientX; // replace previous X position with current
+                curMouseY = e.clientY;// replace previous Y position with current
 
-                const threshold = this.getThresholds(pos, this.posX, this.posY);
+                const threshold = this.getThresholds(pos, posX, posY);
 
-                this.translateX -= this.posX - threshold.X;
-                this.translateY -= this.posY - threshold.Y;
+                this.translateX -= posX - threshold.X;
+                this.translateY -= posY - threshold.Y;
 
-                image.style.translate = `${pos.left + this.translateX}px ${pos.top + this.translateY}px`
+                image.style.translate = `${pos.left + this.translateX}px ${pos.top + this.translateY}px`;
 
-                    if (samples.length == 4) {
-                        samples.shift();
-                    }
+                if (samples.length == 4) {
+                    samples.shift();
+                };
+
                 samples.push({ x: this.translateX, y: this.translateY, ts: performance.now() });
             }
 
@@ -646,24 +640,24 @@
                         //  easing-= easing > 0.5 ? 0.05 : 0.02
                         easing -= (easing * 0.04)
 
-                        if (easing > 0.01 && !isMousedown) {
-                            requestAnimationFrame(scroll.bind(this));
-                        }
+                    if (easing > 0.01 && !isMousedown) {
+                        requestAnimationFrame(scroll.bind(this));
                     }
-
-
-                    requestAnimationFrame(scroll.bind(this));
-
-                    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/atan2
-                    function calcAngleDegrees(x, y) {
-                        return (Math.atan2(y, x) * 180) / Math.PI;
-                    }
-
-                    addEventListener("mousedown", e => {
-                        isMousedown = true
-                    }, { once: true })
-
                 }
+
+
+                requestAnimationFrame(scroll.bind(this));
+
+                // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/atan2
+                function calcAngleDegrees(x, y) {
+                    return (Math.atan2(y, x) * 180) / Math.PI;
+                }
+
+                addEventListener("mousedown", e => {
+                    isMousedown = true
+                }, { once: true })
+
+            }
         }
 
         this.mouseSelection = (e, zoomToSelection) => {
@@ -840,17 +834,13 @@
             const rect = this.image.getBoundingClientRect();
             let pos = this.positionImage(rect);
 
-            let rotateDir,
-                pxLeft = pos.scaleOffsetX + this.translateX,
-                pxTop = pos.scaleOffsetY - this.translateY,
-                posLeft = pos.left,
-                posTop = pos.top;
+            let rotateDir;
 
             if (rotation) { // if positive rotation
-                this.rotate = Math.min(360, this.rotate +90);
+                this.rotate = Math.min(360, this.rotate + 9);
                 rotateDir = 1;
             } else { // if negative rotation
-                this.rotate = Math.max(-360, this.rotate - 90);
+                this.rotate = Math.max(-360, this.rotate - 9);
                 rotateDir = -1;
             }
             if (this.rotate === 360 || this.rotate === -360) { this.rotate = 0 }; // default the -360 and 360 to zero
@@ -866,140 +856,135 @@
             const unrotatedHeight = this.initialRect.height * this.scale;
 
             // if scaled initial width/height is smaller than the view then get center pos else the scrolled left/top pos
-            const viewX = rect.width < this.containerRect.width ? -(this.containerRect.width - rect.width) / 2 : Math.abs(this.translateX)
-            const viewY = rect.height < this.containerRect.height ? -(this.containerRect.height - rect.height) / 2 : Math.abs(this.translateY)
-            console.log(viewX, viewY)
+            // Math abs the translateX & Y point since the negative translate transformation moves to the left/top and positive to the right/bottom
+            const viewX = rect.width < this.containerRect.width ? -(this.containerRect.width - rect.width) / 2 : Math.abs(this.translateX);
+            const viewY = rect.height < this.containerRect.height ? -(this.containerRect.height - rect.height) / 2 : Math.abs(this.translateY);
 
             // rotation matrix assumes origin of the rectange to the bottom left
             // so we have to translate the coordinates of our view's center on the image with that origin in mind
             const viewCenterX = viewX + this.containerRect.width / 2;
-            const viewCenterY = rect.height - viewY - this.containerRect.height / 2;
+            const viewCenterY = rect.height - viewY - this.containerRect.height / 2; // translate Y in cartesian coord system
 
-
-
-            let test = this.rotatedCoords(viewCenterX - rect.width / 2, viewCenterY - rect.height / 2, 9 * rotateDir);
-
-            console.log(test)
-
+            const pointRotation = this.rotatedCoords(viewCenterX - rect.width / 2, viewCenterY - rect.height / 2, 9 * rotateDir); // we rotate it around the center of the image
 
             // since the image's transform-origin is the center of the original width/height we add those center values
             // plus the difference of the original center point and the rotated center point
             // minus our local view's half width/center to move our new point in the view's center
 
-            // this.imageContainer.scrollTo((test.x + unrotatedWidth / 2 + pos.rotatedDiffCx) - this.containerRect.width / 2, (-test.y + unrotatedHeight / 2 + pos.rotatedDiffCy) - this.containerRect.height / 2);
+            // unrotatedWidth is added to simulate the rotation as if it initially was 0 degees. The actual rotation might have started from 9 or 18..n degrees etc
+            // Add the minus sign since we used Math.abs when rotating the point and convert it to a back to a translate XY
+            const newPositionX = -(pointRotation.x + unrotatedWidth/2 + pos.rotatedDiffCx - this.containerRect.width / 2);
+            const newPositionY = -(-pointRotation.y + unrotatedHeight/2 + pos.rotatedDiffCy - this.containerRect.height / 2);
 
-            this.translateX = (test.x + unrotatedWidth/2) + this.containerRect.width / 2
-            this.translateY = (-test.y + unrotatedHeight / 2 ) + this.containerRect.height /2
+            this.translateX = pos.rect.width < this.containerRect.width ? 0 : newPositionX;
+            this.translateY = pos.rect.width < this.containerRect.width ? 0 : newPositionY;
 
-            // this.translateX = test.x - this.containerRect.width / 2;
-            //  this.translateY = -test.y -  this.containerRect.height / 2
+            this.image.style.translate = `${pos.left + this.translateX}px ${pos.top + this.translateY}px`;
+        }
 
-            this.image.style.translate = `${pos.left + this.translateX}px ${pos.top + this.translateY}px`
+        this.rotatedCoords = (x, y, deg) => {
+            // https://www.mathsisfun.com/sine-cosine-tangent.html
+            // Sohcahtoa
+            // sine cosine and tagent are ratios of sides
+            // youtube.com/watch?v=OYuoPTRVzxY
+            // https://gamedev.stackexchange.com/questions/86755/how-to-calculate-corner-positions-marks-of-a-rotated-tilted-rectangle
+
+            // rotation matrix assumes a counter-clockwise rotation, as such we have to translate our rotation to match that
+            let theta = 360 - deg === 360 ? 0 : 360 - deg
+
+            let X = x * Math.cos(this.toRadians(theta)) - y * Math.sin(this.toRadians(theta));
+            let Y = x * Math.sin(this.toRadians(theta)) + y * Math.cos(this.toRadians(theta));
+
+            return { x: X, y: Y }
+        }
+
+        this.toRadians = (deg) => {
+            // https://www.mathsisfun.com/geometry/radians.html
+            return deg * (Math.PI / 180);
+        }
+
+        this.getThresholds = (pos, moveX = 0, moveY = 0) => {
+            // pos.left and pos.top are so the image is does not scale out of the container in top left and brings it back in
+            // this.translateX & this.translateY is the amount offseted from the top & left via dragging or zooming
+            let thresholdX = 0, thresholdY = 0
+
+            if (pos.rect.width <= this.containerRect.width) {
+                thresholdX = moveX;
+            }
+            // if image was dragged out of the container on the right
+            else if (-(this.translateX - moveX) >= pos.rect.width - this.containerRect.width) {
+                thresholdX = -(this.translateX - moveX) - (pos.rect.width - this.containerRect.width);
+                // if offsetX (translateX) minus the pos.left is below 0 ~ unaltered image translate is minus
+            }
+            // if translate would be below zero - removing posX that's pushing the image in the container with offsetX (translateX)
+            else if (-(this.translateX - moveX) < 0) {
+                thresholdX = -(this.translateX - moveX);
             }
 
-            this.rotatedCoords = (x, y, deg) => {
-                // https://www.mathsisfun.com/sine-cosine-tangent.html
-                // Sohcahtoa
-                // sine cosine and tagent are ratios of sides
-                // youtube.com/watch?v=OYuoPTRVzxY
-                // https://gamedev.stackexchange.com/questions/86755/how-to-calculate-corner-positions-marks-of-a-rotated-tilted-rectangle
-
-                // rotation matrix assumes a counter-clockwise rotation, as such we have to translate our rotation to match that
-                let theta = 360 - deg === 360 ? 0 : 360 - deg
-
-                let X = x * Math.cos(this.toRadians(theta)) - y * Math.sin(this.toRadians(theta));
-                let Y = x * Math.sin(this.toRadians(theta)) + y * Math.cos(this.toRadians(theta));
-
-                return { x: X, y: Y }
+            if (pos.rect.height <= this.containerRect.height) {
+                thresholdY = moveY;
+            }
+            else if (-(this.translateY - moveY) >= pos.rect.height - this.containerRect.height) {
+                thresholdY = -(this.translateY - moveY) - (pos.rect.height - this.containerRect.height);
+            }
+            else if (-(this.translateY - moveY) < 0) {
+                thresholdY = -(this.translateY - moveY);
             }
 
-            this.toRadians = (deg) => {
-                // https://www.mathsisfun.com/geometry/radians.html
-                return deg * (Math.PI / 180);
+            return { X: thresholdX, Y: thresholdY }
+        }
+
+        this.reset = (transform = true) => {
+            // const rectangle = document.getElementById("slideshow-rectangle");
+            // rectangle.style.cssText += "left: 0px; top: 0px; height: 0px; width: 0px;";
+
+            if (transform) {
+                this.rotate = 0;
+                this.flipX = 1;
+                this.flipY = 1;
             }
+            this.translateX = 0;
+            this.translateY = 0;
+            this.scale = 1;
+            this.image.style.transform = this.assembleTransform();
 
-            this.getThresholds = (pos, moveX = 0, moveY = 0) => {
-                // pos.left and pos.top are so the image is does not scale out of the container in top left and brings it back in
-                // this.translateX & this.translateY is the amount offseted from the top & left via dragging or zooming
-                let thresholdX = 0, thresholdY = 0
+            // this.image.style.top = "0px";
+            //this.image.style.left = "0px";
+            // this.imageContainer.dispatchEvent(new Event('wheel')) // scrollHeight/scrollWidth remains the same even after programmaticaly changing src on the img element, this is a hack to reset them
+        }
 
-                if (pos.rect.width <= this.containerRect.width) {
-                    thresholdX = moveX;
-                }
-                // if image was dragged out of the container on the right
-                else if (-(this.translateX - moveX) >= pos.rect.width - this.containerRect.width) {
-                    thresholdX = -(this.translateX - moveX) - (pos.rect.width - this.containerRect.width);
-                    // if offsetX (translateX) minus the pos.left is below 0 ~ unaltered image translate is minus
-                }
-                // if translate would be below zero - removing posX that's pushing the image in the container with offsetX (translateX)
-                else if (-(this.translateX - moveX) < 0) {
-                    thresholdX = -(this.translateX - moveX);
-                }
-
-                if (pos.rect.height <= this.containerRect.height) {
-                    thresholdY = moveY;
-                }
-                else if (-(this.translateY - moveY) >= pos.rect.height - this.containerRect.height) {
-                    thresholdY = -(this.translateY - moveY) - (pos.rect.height - this.containerRect.height);
-                }
-                else if (-(this.translateY - moveY) < 0) {
-                    thresholdY = -(this.translateY - moveY);
-                }
-
-                return { X: thresholdX, Y: thresholdY }
+        this.displayAppropriateIcon = () => {
+            if (Math.round(this.scale * 100) !== Math.round(this.fitScale * 100)) {
+                document.querySelector('#fitToScreen.tool-icon').style.display = "flex";
+                document.querySelector('#ogSize.tool-icon').style.display = "none";
+            } else {
+                document.querySelector('#fitToScreen.tool-icon').style.display = "none";
+                document.querySelector('#ogSize.tool-icon').style.display = "flex";
             }
+        }
 
-            this.reset = (transform = true) => {
-                // const rectangle = document.getElementById("slideshow-rectangle");
-                // rectangle.style.cssText += "left: 0px; top: 0px; height: 0px; width: 0px;";
-
-                if (transform) {
-                    this.rotate = 0;
-                    this.flipX = 1;
-                    this.flipY = 1;
-                }
-                this.translateX = 0;
-                this.translateY = 0;
+        this.scaleControl = (prevScale) => {
+            if (prevScale < 1 && this.scale > 1 || prevScale > 1 && this.scale < 1) { //snap to original size
                 this.scale = 1;
-                this.image.style.transform = this.assembleTransform();
-
-                // this.image.style.top = "0px";
-                //this.image.style.left = "0px";
-                // this.imageContainer.dispatchEvent(new Event('wheel')) // scrollHeight/scrollWidth remains the same even after programmaticaly changing src on the img element, this is a hack to reset them
             }
-
-            this.displayAppropriateIcon = () => {
-                if (Math.round(this.scale * 100) !== Math.round(this.fitScale * 100)) {
-                    document.querySelector('#fitToScreen.tool-icon').style.display = "flex";
-                    document.querySelector('#ogSize.tool-icon').style.display = "none";
-                } else {
-                    document.querySelector('#fitToScreen.tool-icon').style.display = "none";
-                    document.querySelector('#ogSize.tool-icon').style.display = "flex";
-                }
+            else if ((prevScale > this.fitScale && this.scale < this.fitScale) || (prevScale < this.fitScale && this.scale > this.fitScale)) { //snap to fit to screen size
+                this.scale = this.fitScale;
             }
-
-            this.scaleControl = (prevScale) => {
-                if (prevScale < 1 && this.scale > 1 || prevScale > 1 && this.scale < 1) { //snap to original size
-                    this.scale = 1;
-                }
-                else if ((prevScale > this.fitScale && this.scale < this.fitScale) || (prevScale < this.fitScale && this.scale > this.fitScale)) { //snap to fit to screen size
-                    this.scale = this.fitScale;
-                }
-                else if (this.scale < 0.01) { //lower bound
-                    this.scale = 0.01;
-                }
-                else if (this.scale > 100) { // upper bound
-                    this.scale = 100;
-                }
+            else if (this.scale < 0.01) { //lower bound
+                this.scale = 0.01;
             }
-
-            this.addWillChange = () => {
-                this.image.style.willChange = "transform";
+            else if (this.scale > 100) { // upper bound
+                this.scale = 100;
             }
+        }
 
-            this.removeWillChange = () => {
-                this.image.style.willChange = "auto";
-            }
+        this.addWillChange = () => {
+            this.image.style.willChange = "transform";
+        }
+
+        this.removeWillChange = () => {
+            this.image.style.willChange = "auto";
+        }
     }
 
     set index(index) {
@@ -1011,7 +996,6 @@
     }
 
 }
-
     let slidesData = [];
 
     let photos = Array.from(document.querySelectorAll('img'));
