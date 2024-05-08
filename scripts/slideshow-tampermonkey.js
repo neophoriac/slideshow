@@ -185,11 +185,11 @@ class Slideshow {
             const imgHasBiggerWidth = this.prevRect.width > this.containerRect.width;
             const imgHasBiggerHeight = this.prevRect.height > this.containerRect.height;
 
-             if ((imgHasBiggerHeight || imgHasBiggerWidth) && !isCtrlPressed) {
-            this.drag(e, this.image)
-              } else {
-            this.mouseSelection(e, this.zoomToSelection);
-             }
+            if ((imgHasBiggerHeight || imgHasBiggerWidth) && !isCtrlPressed) {
+                this.drag(e, this.image)
+            } else {
+                this.mouseSelection(e, this.zoomToSelection);
+            }
         })
 
         this.background.addEventListener('mousedown', e => {
@@ -520,15 +520,15 @@ class Slideshow {
             let centerY = this.prevRect.height < this.containerRect.height ? -pos.centerY : centerOffsetY;
 
             // zoom to where the pointer is pointing
-            this.translateX = this.prevRect.width * scaleRatio <= this.containerRect.width ? 0 : this.translateX * scaleRatio - centerX - centerX * ratioX;
-            this.translateY = this.prevRect.height * scaleRatio <= this.containerRect.height ? 0 : this.translateY * scaleRatio - centerY - centerY * ratioY;
+            this.translateX = this.translateX * scaleRatio - centerX - centerX * ratioX;
+            this.translateY = this.translateY * scaleRatio - centerY - centerY * ratioY;
 
             const threshold = this.getThresholds(pos);
 
             this.translateX += threshold.X;
             this.translateY += threshold.Y;
 
-            this.image.style.translate = `${pos.left + this.translateX}px ${pos.top + this.translateY}px`
+            this.image.style.translate = `${pos.left + this.translateX}px ${pos.top + this.translateY}px`;
                 this.prevRect = rect;
 
             this.displayAppropriateIcon();
@@ -732,7 +732,7 @@ class Slideshow {
             let priorCenterX = (this.containerRect.width - this.prevRect.width) / 2;
             let priorCenterY = (this.containerRect.height - this.prevRect.height) / 2;
 
-            // how much the photo has shifted from the center
+            // how much the photo is shifted from the center
             let scrollCenterOffsetX = this.prevRect.width > this.containerRect.width ? Math.abs(this.translateX) + priorCenterX : 0;
             let scrollCenterOffsetY = this.prevRect.height > this.containerRect.height ? Math.abs(this.translateY) + priorCenterY : 0;
 
@@ -759,34 +759,44 @@ class Slideshow {
             this.image.style.transform = this.assembleTransform();
 
             // the difference between the previous and the next scale
-            // needed as we won't always be zooming in from scale 0
-            let scaleDiff = (this.scale / priorScale)
+            // needed as we won't always be zooming in from scale 1
+            let scaleDiff = (this.scale / priorScale);
 
             // our new image height and width
-            this.prevRect.height = this.prevRect.height * this.scale;
-            this.prevRect.width = this.prevRect.width * this.scale;
+            this.prevRect.height = this.prevRect.height * scaleDiff;
+            this.prevRect.width = this.prevRect.width * scaleDiff;
 
             // the height and width difference of our image before being scaled and the container
-            let imageSizeDiffX = (this.containerRect.width - priorWidth) / 2
-            let imageSizeDiffY = (this.containerRect.height - priorHeight) / 2
+            let imageSizeDiffX = (this.containerRect.width - priorWidth) / 2;
+            let imageSizeDiffY = (this.containerRect.height - priorHeight) / 2;
 
             // the left and top values of our selection within the container
-            let x = selectionRect.left - this.containerRect.left;
-            let y = selectionRect.top - this.containerRect.top;
+            let selectionleft = selectionRect.left - this.containerRect.left;
+            let selectionTop = selectionRect.top - this.containerRect.top;
+
+            // the left and top of selection based on the image
+            const selectionDisplaceX = selectionleft - imageSizeDiffX;
+            const selectionDisplaceY = selectionTop - imageSizeDiffY;
 
             // the height and width difference of our scaled selection and the container. used for centering
             let selectionSizeDiffX = (this.containerRect.width - selectionRect.width * scaleDiff) / 2;
             let selectionSizeDiffY = (this.containerRect.height - selectionRect.height * scaleDiff) / 2;
 
-            // const rectangle = document.getElementById("slideshow-rectangle");
-            // rectangle.style.cssText += `height: ${selectionRect.height * (this.scale / priorScale)}px; width: ${selectionRect.width * (this.scale / priorScale)}px; left: ${(x - imageSizeDiffX) * (this.scale / priorScale)+ scrollCenterOffsetX* (this.scale / priorScale)}px; top: ${(y - imageSizeDiffY) * (this.scale / priorScale)+ scrollCenterOffsetY* (this.scale / priorScale)}px`;
+            //const rectangle = document.getElementById("slideshow-rectangle");
+            //rectangle.style.cssText += `height: ${selectionRect.height * (this.scale / priorScale)}px; width: ${selectionRect.width * (this.scale / priorScale)}px; left: ${(x - imageSizeDiffX) * (this.scale / priorScale)+ scrollCenterOffsetX* (this.scale / priorScale)}px; top: ${(y - imageSizeDiffY) * (this.scale / priorScale)+ scrollCenterOffsetY* (this.scale / priorScale)}px`;
 
             const pos = this.positionImage(this.prevRect)
 
-            this.translateX =  -((x - imageSizeDiffX) * scaleDiff - selectionSizeDiffX + scrollCenterOffsetX * scaleDiff);
-            this.translateY =  -((y - imageSizeDiffY) * scaleDiff - selectionSizeDiffY + scrollCenterOffsetY * scaleDiff);
+            this.translateX = -(selectionDisplaceX * scaleDiff - selectionSizeDiffX + scrollCenterOffsetX * scaleDiff);
+            this.translateY = -(selectionDisplaceY * scaleDiff - selectionSizeDiffY + scrollCenterOffsetY * scaleDiff);
 
-             this.image.style.translate = `${pos.left + this.translateX}px ${pos.top +this.translateY}px`
+            const threshold = this.getThresholds(pos);
+            console.log(this.translateX, this.translateY)
+
+            this.translateX += threshold.X;
+            this.translateY += threshold.Y;
+
+            this.image.style.translate = `${pos.left + this.translateX}px ${pos.top + this.translateY}px`;
 
             this.zoomLevel.innerText = Math.round(100 * this.scale) + "%"; // indicate percentage zoomed
 
@@ -880,6 +890,8 @@ class Slideshow {
             this.translateX = pos.rect.width < this.containerRect.width ? 0 : newPositionX;
             this.translateY = pos.rect.height < this.containerRect.height ? 0 : newPositionY;
 
+            const threshold = this.getThresholds(pos);
+
             this.image.style.translate = `${pos.left + this.translateX}px ${pos.top + this.translateY}px`;
         }
 
@@ -910,7 +922,7 @@ class Slideshow {
             let thresholdX = 0, thresholdY = 0
 
             if (pos.rect.width <= this.containerRect.width) {
-                thresholdX = moveX;
+                thresholdX = -this.translateX;
             }
             // if image was dragged out of the container on the right
             else if (-(this.translateX - moveX) >= pos.rect.width - this.containerRect.width) {
@@ -923,7 +935,7 @@ class Slideshow {
             }
 
             if (pos.rect.height <= this.containerRect.height) {
-                thresholdY = moveY;
+                thresholdY = -this.translateY;
             }
             else if (-(this.translateY - moveY) >= pos.rect.height - this.containerRect.height) {
                 thresholdY = -(this.translateY - moveY) - (pos.rect.height - this.containerRect.height);
@@ -997,6 +1009,7 @@ class Slideshow {
     }
 
 }
+
     let slidesData = [];
 
     let photos = Array.from(document.querySelectorAll('img'));
