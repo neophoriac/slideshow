@@ -544,7 +544,7 @@
                 this.raf = raf.bind(this);
                 this.stopDrag = stopDrag.bind(this);
                 this.inertia = inertia.bind(this);
-                let pos = this.positionImage(this.prevRect);
+                
                 let samples = [];
                 let rafNeeded = true;
 
@@ -566,7 +566,7 @@
                 function move(e) {
 
                     rafNeeded = true;
-
+                    let pos = this.positionImage(this.prevRect);
                     posX = curMouseX - e.clientX;
                     posY = curMouseY - e.clientY;
 
@@ -619,10 +619,9 @@
                     let prevTimestamp = performance.now()
                     let easing = 1;
                     function scroll() {
-                        let pos = this.positionImage(this.prevRect)
-
                         if (isMousedown) { return }
                         // add the ratio of a and h to X, o and h to Y
+                        const pos = this.positionImage(this.prevRect)
                         const timestamp = performance.now();
                         let timeBetweenFrames = timestamp - prevTimestamp;
                         prevTimestamp = timestamp;
@@ -916,32 +915,34 @@
                 return deg * (Math.PI / 180);
             }
 
-            this.getThresholds = (pos,) => {
+            this.getThresholds = (pos) => {
                 // pos.left and pos.top are so the image is does not scale out of the container in top left and brings it back in
                 // this.translateX & this.translateY is the amount offseted from the top & left via dragging or zooming
                 let thresholdX = 0, thresholdY = 0
 
-                if (pos.rect.width <= this.containerRect.width) {
+                const radius = Math.sqrt(Math.pow(pos.rect.width/2, 2) + Math.pow(pos.rect.height/2, 2))
+
+                if (pos.rect.width  <= this.containerRect.width) {
                     thresholdX = -this.translateX;
                 }
                 // if image was dragged out of the container on the right
-                else if (-(this.translateX) >= pos.rect.width - this.containerRect.width) {
-                    thresholdX = -(this.translateX) - (pos.rect.width - this.containerRect.width);
+                else if (-(this.translateX) - this.containerRect.width/2 >= pos.rect.width - this.containerRect.width) {
+                    thresholdX = -(this.translateX) - this.containerRect.width/2 - (pos.rect.width - this.containerRect.width);
                     // if offsetX (translateX) minus the pos.left is below 0 ~ unaltered image translate is minus
                 }
                 // if translate would be below zero - removing posX that's pushing the image in the container with offsetX (translateX)
-                else if (-(this.translateX) < 0) {
-                    thresholdX = -(this.translateX);
+                else if (-(this.translateX) + this.containerRect.width/2 < 0) {
+                    thresholdX = -(this.translateX) + this.containerRect.width/2;
                 }
 
                 if (pos.rect.height <= this.containerRect.height) {
                     thresholdY = -this.translateY;
                 }
-                else if (-(this.translateY) >= pos.rect.height - this.containerRect.height) {
-                    thresholdY = -(this.translateY) - (pos.rect.height - this.containerRect.height);
+                else if (-(this.translateY) - this.containerRect.height/2 >= pos.rect.height - this.containerRect.height) {
+                    thresholdY = -(this.translateY) - this.containerRect.height/2 - (pos.rect.height - this.containerRect.height);
                 }
-                else if (-(this.translateY) < 0) {
-                    thresholdY = -(this.translateY);
+                else if (-(this.translateY) + this.containerRect.height/2 < 0) {
+                    thresholdY = -(this.translateY) + this.containerRect.height/2;
                 }
 
                 return { X: thresholdX, Y: thresholdY }
